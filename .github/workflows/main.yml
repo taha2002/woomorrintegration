@@ -1,5 +1,6 @@
 name: Archive Woomorrintegration content
-# on:
+on:
+  workflow_dispatch:
 #   push:
 #     branches:
 #       - main
@@ -15,7 +16,7 @@ jobs:
       - name: Update version information
         run: |
           # Update the version in the JSON file
-          sed -i "s/<plugin_version>/1.0.${{ github.run_number }}/g" plugin-woomorrintegration.json
+          sed -i "s/<plugin_version>/1.0.${{ github.run_number }}/g"  plugin-woomorrintegration.json > template-plugin-woomorrintegration.json
 
       - name: Archive content
         uses: thedoctor0/zip-release@0.7.5
@@ -41,13 +42,3 @@ jobs:
           asset_path: ./woomorrintegration.zip
           asset_name: woomorrintegration.zip
           asset_content_type: application/zip
-      - name: Commit changes
-        run: |
-          git config --global user.email "bouras1920@gmail.com"
-          git config --global user.name "GitHub Actions"
-          git add plugin-woomorrintegration.json
-          git commit -m "Update blog.json"
-          git remote set-url origin https://taha2002:${{ secrets.GH_TOKEN }}@github.com/taha2002/woomorrintegration
-          git push
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
