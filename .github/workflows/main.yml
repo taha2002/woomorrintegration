@@ -16,7 +16,7 @@ jobs:
         uses: thedoctor0/zip-release@0.7.5
         with:
           filename: woomorrintegration.zip
-          exclusions: '*.json'
+          exclusions: '*.json *.git*'
 
       - name: Create GitHub release
         id: create-new-release
