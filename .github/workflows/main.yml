@@ -42,3 +42,11 @@ jobs:
           asset_path: ./woomorrintegration.zip
           asset_name: woomorrintegration.zip
           asset_content_type: application/zip
+          
+      - name: Commit & Push
+        uses: Andro999b/push@v1.3
+        with:
+          github_token: ${{ secrets.GH_TOKEN }}
+          branch: main
+          force: true
+          message: 'Overwritten by Github Actions - ${date}'
