@@ -21,7 +21,7 @@ if ( ! defined( 'WPINC' ) ) {
 define( 'WOOMORRINTEGRATION_VERSION', '1.0.0' );
 define( 'WOOMORRINTEGRATION_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WOOMORRINTEGRATION_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
-define( 'WOOMORRINTEGRATION_UPDATE_URL', 'https://wpfreighter.com/plugin-wpfreighter.json' );
+define( 'WOOMORRINTEGRATION_UPDATE_URL', 'https://raw.githubusercontent.com/taha2002/woomorrintegration/main/plugin-woomorrintegration.json' );
 define( 'WOOMORRINTEGRATION_CACHE_KEY', 'wpwoomorrintegration_updater' );
 
 
