@@ -41,3 +41,13 @@ jobs:
           asset_path: ./woomorrintegration.zip
           asset_name: woomorrintegration.zip
           asset_content_type: application/zip
+      - name: Commit changes
+        run: |
+          git config --global user.email "bouras1920@gmail.com"
+          git config --global user.name "GitHub Actions"
+          git add static/blog.json
+          git commit -m "Update blog.json"
+          git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
