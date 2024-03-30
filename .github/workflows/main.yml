@@ -22,7 +22,7 @@ jobs:
       - name: Update version information
         run: |
           # Update the version in the JSON file
-          sed -i "s/<plugin_version>/1.0.${{ github.run_number }}/g"  plugin-woomorrintegration.json > template-plugin-woomorrintegration.json
+          sed "s/<plugin_version>/1.0.${{ github.run_number }}/g"  template-plugin-woomorrintegration.json > plugin-woomorrintegration.json
 
       - name: Archive content
         uses: thedoctor0/zip-release@0.7.5
