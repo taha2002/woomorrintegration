@@ -3,7 +3,7 @@
  * Plugin Name:       Woomorrintegration
  * Plugin URI:        https://morr.biz/
  * Description:       Add woo integration with morr.
- * Version:           1.0.0
+ * Version:           1.0.1
  * Author:            Taha Bou
  * Author URI:        http://taha2002.github.io/
  * Text Domain:       WOOMORRINTEGRATION
@@ -18,7 +18,7 @@ if ( ! defined( 'WPINC' ) ) {
 }
 
 // Define constants.
-define( 'WOOMORRINTEGRATION_VERSION', '1.0.0' );
+define( 'WOOMORRINTEGRATION_VERSION', '1.0.1' );
 define( 'WOOMORRINTEGRATION_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
 define( 'WOOMORRINTEGRATION_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'WOOMORRINTEGRATION_UPDATE_URL', 'https://raw.githubusercontent.com/taha2002/woomorrintegration/main/plugin-woomorrintegration.json' );
