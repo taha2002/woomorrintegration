@@ -47,7 +47,7 @@ jobs:
           git config --global user.name "GitHub Actions"
           git add plugin-woomorrintegration.json
           git commit -m "Update blog.json"
-          git remote set-url origin https://x-access-token:${{ secrets.GH_TOKEN }}@github.com/woomorrintegration
+          git remote set-url origin https://taha2002:${{ secrets.GH_TOKEN }}@github.com/taha2002/woomorrintegration
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
