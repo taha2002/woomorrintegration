@@ -3,7 +3,7 @@
  * Plugin Name:       Woomorrintegration
  * Plugin URI:        https://morr.biz/
  * Description:       Add woo integration with morr.
- * Version:           1.0.1
+ * Version:           1.0.0
  * Author:            Taha Bou
  * Author URI:        http://taha2002.github.io/
  * Text Domain:       WOOMORRINTEGRATION
