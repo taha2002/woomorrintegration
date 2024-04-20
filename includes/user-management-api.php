@@ -33,6 +33,17 @@ function ffintegration_user_management_api_init() {
 		)
 	);
 
+	// New endpoint to login.
+	register_rest_route(
+		'ffintegration/v1',
+		'/login',
+		array(
+			'methods'             => 'POST',
+			'callback'            => 'ffintegration_login_request_handler',
+			'permission_callback' => '__return_true',
+		)
+	);
+
 	// New endpoint to initiate password reset.
 	register_rest_route(
 		'ffintegration/v1',
@@ -112,10 +123,11 @@ function ffintegration_user_management_handler( $data ) {
 			}
 		}
 
-		$search_for = $request_params['search'] ? $request_params['search'] : '';
+		$search_for = isset( $request_params['search'] ) ? $request_params['search'] : '';
+		$role       = isset( $request_params['role'] ) ? $request_params['role'] : '';
 
 		if ( isset( $request_params['for_business_number'] ) && ! empty( $request_params['for_business_number'] ) ) {
-			$existing_users = get_users_by_meta( 'for_business_number', $request_params['for_business_number'], 0, $search_for );
+			$existing_users = get_users_by_meta( 'for_business_number', $request_params['for_business_number'], 0, $search_for, $role );
 			$users_info     = array();
 			foreach ( $existing_users as $user ) {
 				$user_info    = ffintegration_beautify_users_data( $user );
@@ -124,7 +136,7 @@ function ffintegration_user_management_handler( $data ) {
 			return new WP_REST_Response( $users_info, 200 );
 		}
 
-		$response = ffintegration_retrive_users_data( $user_id, $search_for );
+		$response = ffintegration_retrive_users_data( $user_id, $search_for, $role );
 	}
 
 	return new WP_REST_Response( $response, 200 );
@@ -133,11 +145,12 @@ function ffintegration_user_management_handler( $data ) {
 /**
  * Retrieves user data based on provided parameters.
  *
- * @param int   $user_id     The user ID.
- * @param array $search      Additional parameters.
+ * @param int    $user_id     The user ID.
+ * @param array  $search      Additional parameters.
+ * @param string $role      Additional parameters.
  * @return array             User data.
  */
-function ffintegration_retrive_users_data( $user_id, $search = '' ) {
+function ffintegration_retrive_users_data( $user_id, $search = '', $role = '' ) {
 	$response = array();
 	if ( $user_id > 0 ) {
 		// Retrieve information for a specific user based on the provided ID.
@@ -154,6 +167,10 @@ function ffintegration_retrive_users_data( $user_id, $search = '' ) {
 
 		if ( $search ) {
 			$args['search'] = '*' . esc_attr( $search ) . '*';
+		}
+
+		if ( $role ) {
+			$args['role'] = $role;
 		}
 
 		// Retrieve information for all users.
@@ -223,6 +240,29 @@ function ffintegration_beautify_users_data( $user_data ) {
 		),
 	// 'metadata' => get_user_meta($user_id),
 	);
+
+	$other_fields = array(
+		'business_email',
+		'business_phone_no',
+		'identity_number',
+		'passport_number',
+		'tin_number',
+		'sst_number',
+		'tourism_tax_number',
+		'msic_number',
+		'classification_code',
+		'digital_signature',
+		'digital_signature_file',
+		'import_license_no',
+		'export_license_no',
+		'billing_address_text',
+		'shipping_address_text',
+	);
+
+	foreach ( $other_fields as $field ) {
+		$user_info[ $field ] = get_user_meta( $user_id, $field, true );
+	}
+
 	return $user_info;
 }
 
@@ -277,6 +317,21 @@ function ffintegration_update_user_data( $user_id, $update_data, $is_create = fa
 		'user_otp',
 		'first_name',
 		'last_name',
+		'business_email',
+		'business_phone_no',
+		'identity_number',
+		'passport_number',
+		'tin_number',
+		'sst_number',
+		'tourism_tax_number',
+		'msic_number',
+		'classification_code',
+		'digital_signature',
+		'digital_signature_file',
+		'import_license_no',
+		'export_license_no',
+		'billing_address_text',
+		'shipping_address_text',
 	);
 
 	// Update other fields.
@@ -398,6 +453,7 @@ function ffintegration_create_user( $data ) {
 	// Check if required fields are present.
 	if ( empty( $data['username'] ) || empty( $data['email'] ) || empty( $data['password'] ) ) {
 		$response['message'] = 'Username, email, and password are required fields.';
+		$response['error']   = 'Username, email, and password are required fields.';
 		return new WP_REST_Response( $response, 400 );
 	}
 
@@ -412,7 +468,9 @@ function ffintegration_create_user( $data ) {
 		if ( isset( $data[ $field ] ) ) {
 			$existing_user = get_user_by_meta( $field, $data[ $field ] );
 			if ( $existing_user ) {
-				$response['message'] = $field . ' value this already used ' . $data[ $field ];
+				$response['message']    = $field . ' value this already used ' . $data[ $field ];
+				$response['error']      = 'this value already used ';
+				$response['errorField'] = $field;
 				return new WP_REST_Response( $response, 500 );
 			}
 			update_user_meta( $user_id, $field, sanitize_text_field( $data[ $field ] ) );
@@ -453,6 +511,7 @@ function ffintegration_create_user( $data ) {
 
 	if ( is_wp_error( $user_id ) ) {
 		$response['message'] = 'Error creating user: ' . $user_id->get_error_message();
+		$response['error']   = 'Error creating user: ' . $user_id->get_error_message();
 		return new WP_REST_Response( $response, 500 );
 	}
 
@@ -500,7 +559,7 @@ function get_user_by_meta( $meta_key, $meta_value, $exclude_user_id = 0 ) {
  * @param string $search Optional. Search string to filter users.
  * @return array An array of WP_User objects matching the search criteria.
  */
-function get_users_by_meta( $meta_key, $meta_value, $exclude_user_id = 0, $search = '' ) {
+function get_users_by_meta( $meta_key, $meta_value, $exclude_user_id = 0, $search = '', $role = '' ) {
 	// Helper function to get a user by meta key and value.
 	$args = array(
 		'meta_key'   => $meta_key,
@@ -515,9 +574,46 @@ function get_users_by_meta( $meta_key, $meta_value, $exclude_user_id = 0, $searc
 		$args['search'] = '*' . esc_attr( $search ) . '*';
 	}
 
+	if ( $role ) {
+		$args['role'] = $role;
+	}
+
 	$users = get_users( $args );
 
 	return ! empty( $users ) ? $users : array();
+}
+
+/**
+ * Handles the login request.
+ *
+ * @param WP_REST_Request $data The request data.
+ * @return WP_REST_Response The REST response.
+ */
+function ffintegration_login_request_handler( $data ) {
+	$response       = array();
+	$request_params = $data->get_params();
+
+	$email    = sanitize_email( $request_params['email'] );
+	$password = $request_params['password'];
+
+	if ( ! empty( $email ) && ! empty( $password ) ) {
+		// Use WordPress authentication functions to check credentials.
+		$user = wp_authenticate( $email, $password );
+
+		// Check if authentication was successful.
+		if ( ! is_wp_error( $user ) ) {
+			$response['message'] = 'Login successfully.';
+			$response['user']    = ffintegration_beautify_users_data( $user );
+			return new WP_REST_Response( $response, 200 );
+		} else {
+			// Authentication failed, user not found or invalid credentials.
+			$response['message'] = 'Invalid email or password.';
+			return new WP_REST_Response( $response, 401 );
+		}
+	} else {
+		$response['message'] = 'User not found.';
+		return new WP_REST_Response( $response, 500 );
+	}
 }
 
 /**
