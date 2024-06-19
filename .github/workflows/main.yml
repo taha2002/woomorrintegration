@@ -1,0 +1,54 @@
+name: Archive Woomorrintegration content
+on:
+  workflow_dispatch:
+#   push:
+#     branches:
+#       - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    permissions:
+      # Give the default GITHUB_TOKEN write permission to commit and push the changed files back to the repository.
+      contents: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+        
+      - name: Update version information
+        run: |
+          # Update the version in the JSON file
+          sed "s/<plugin_version>/1.0.${{ github.run_number }}/g"  template-plugin-woomorrintegration.json > plugin-woomorrintegration.json
+
+      - name: Archive content
+        uses: thedoctor0/zip-release@0.7.5
+        with:
+          filename: woomorrintegration.zip
+          exclusions: '*.json *.git*'
+
+      - name: Create GitHub release
+        id: create-new-release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        with:
+          tag_name: v1.0.${{ github.run_number }}
+          release_name: Release v1.0.${{ github.run_number }}
+          
+      - name: Upload release asset
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+        with:
+          upload_url: ${{ steps.create-new-release.outputs.upload_url }}
+          asset_path: ./woomorrintegration.zip
+          asset_name: woomorrintegration.zip
+          asset_content_type: application/zip
+          
+      - uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: Apply php-cs-fixer changes

@@ -1,0 +1,24 @@
+{
+    "name": "Woomorrintegration",
+    "slug": "woomorrintegration",
+    "author": "<a href='https://morr.biz/'>Morr by taha</a>",
+    "author_profile": "https://morr.biz/",
+    "version": "<plugin_version>",
+    "download_url": "https://github.com/taha2002/woomorrintegration/releases/download/v<plugin_version>/woomorrintegration.zip",
+    "requires": "5.6",
+    "tested": "6.2",
+    "requires_php": "5.6",
+    "added": "2024-03-30 09:00:00",
+    "last_updated": "2024-03-30 09:00:00",
+    "homepage": "https://morr.biz/",
+    "sections": {
+      "description": "Efficiently run many WordPress sites from a single WordPress installation.",
+      "installation": "Click the activate button and that's it.",
+      "changelog": "<h4>v1.0.0 released</h4><ul><li>Feature ...</li></ul>"
+    },
+    "banners": {
+      "low": "https://morr.biz/wp-content/uploads/2023/01/customer-support-600x338.jpg",
+      "high": "https://morr.biz/wp-content/uploads/2023/01/customer-support-600x338.jpg"
+    }
+  }
+  
