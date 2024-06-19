@@ -117,6 +117,16 @@ function register_ffintegration_custom_field() {
 		)
 	);
 
+	register_rest_route(
+		'ffintegration/v1',
+		'/orders/status-history',
+		array(
+			'methods'             => 'GET',
+			'callback'            => 'ffintegration_get_order_status_history',
+			'permission_callback' => '__return_true',
+		)
+	);
+
 }
 add_action( 'rest_api_init', 'register_ffintegration_custom_field' );
 
@@ -422,3 +432,90 @@ function filter_customers_by_for_business_number( $args, $request ) {
 	return $args;
 }
 add_filter( 'woocommerce_rest_customer_query', 'filter_customers_by_for_business_number', 999, 2 );
+
+
+/**
+ * Handles the request to get order status history.
+ *
+ * @param WP_REST_Request $request The request data.
+ * @return WP_REST_Response The REST response.
+ */
+function ffintegration_get_order_status_history( $request ) {
+	$response        = array();
+	$email           = sanitize_email( $request->get_param( 'email' ) );
+	$business_number = $request->get_param( 'business_number' );
+
+	if ( empty( $email ) && empty( $business_number ) ) {
+		$response['message'] = 'Email and business number are required.';
+		return new WP_REST_Response( $response, 400 );
+	}
+
+	if ( $business_number ) {
+		$query = array(
+			'meta_key'   => 'business_number',
+			'meta_value' => $business_number,
+			// 'customer_id' => $user->ID,
+		);
+	} elseif ( $email ) {
+		// Get user by email.
+		$user = get_user_by( 'email', $email );
+
+		if ( ! $user ) {
+			return new WP_REST_Response( array( 'message' => 'User not found' ), 404 );
+		}
+
+		$query = array(
+			// 'meta_key'    => 'business_number',
+			// 'meta_value'  => $business_number,
+			'customer_id' => $user->ID,
+		);
+	}
+
+	$orders = wc_get_orders(
+		$query
+	);
+
+	foreach ( $orders as $order ) {
+		$order_id       = $order->get_id();
+		$status_changes = get_post_meta( $order_id, '_status_history', true );
+		$prev_status    = '';
+
+		$date_created  = $order->get_date_created();
+		$date_modified = $order->get_date_modified();
+
+		if ( ! empty( $status_changes ) && is_array( $status_changes ) ) {
+			foreach ( $status_changes as $change_date => $change ) {
+				$response[]  = array(
+					'order_id'     => $order_id,
+					'status'       => 'sent',
+					'message_type' => 'customer_order_update_notifier',
+					'sender_id'    => 0,
+					'message'      => '#' . $order_id . ' order status updates to completed',
+					'change_date'  => $change_date * 1000,
+					'created_at'   => $change_date * 1000,
+					'data'         => array(
+						'id'              => $order_id,
+						'customer_email'  => null,
+						'date_created'    => $date_created->date( 'F j, Y, g:i:s A T' ),
+						'date_modified'   => $date_modified->date( 'F j, Y, g:i:s A T' ),
+						'prev_status'     => 'processing',
+						'status'          => $order->get_status(),
+						'business_number' => $business_number,
+						'customer_name'   => '',
+						'next_page'       => 'my_messages',
+					),
+				);
+				$prev_status = $order->get_status();
+			}
+		}
+	}
+
+	usort(
+		$response,
+		function( $a, $b ) {
+			return $a['created_at'] - $b['created_at'];
+		}
+	);
+
+	return new WP_REST_Response( $response, 200 );
+}

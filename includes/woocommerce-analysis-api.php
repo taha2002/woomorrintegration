@@ -529,3 +529,174 @@ function get_woocommerce_analysis( $request ) {
 	);
 	return new WP_REST_Response( $analysis_data, 200 );
 }
+
+
+
+/**
+ * Leaderboards custom_products_query_args.
+ *
+ * @param  $query_vars
+ *
+ * @return
+ */
+function leaderboards_custom_products_query_args( $query_args ) {
+	if ( isset( $_GET['business_number'] ) && ! empty( $_GET['business_number'] ) ) {
+		// $meta_query = array(
+		// array(
+		// 'key'     => 'business_number',
+		// 'value'   => $_GET['business_number'],
+		// 'compare' => '=',
+		// ),
+		// );
+
+		// $query_args['meta_query'] = $meta_query;
+
+		$business_number = sanitize_text_field( $_GET['business_number'] );
+
+		$ids = get_posts(
+			array(
+				'posts_per_page' => -1,
+				'post_type'      => array( 'product' ),
+				'fields'         => 'ids',
+				'meta_query'     => array(
+					array(
+						'key'   => 'business_number',
+						'value' => $business_number,
+					),
+				),
+			)
+		);
+
+		$query_args['product_includes'] = $ids;
+	}
+	return $query_args;
+}
+add_filter( 'woocommerce_analytics_products_query_args', 'leaderboards_custom_products_query_args', 999 );
+
+
+/**
+ * Leaderboards custom_customers_query_args.
+ *
+ * @param  $query_vars
+ *
+ * @return
+ */
+function leaderboards_custom_customers_query_args( $query_args ) {
+	if ( isset( $_GET['business_number'] ) && ! empty( $_GET['business_number'] ) ) {
+
+		$business_number = sanitize_text_field( $_GET['business_number'] );
+
+		$meta_query = array(
+			array(
+				'key'     => 'for_business_number',
+				'value'   => $business_number,
+				'compare' => '=',
+			),
+		);
+
+		$users = get_users(
+			array(
+				'meta_query' => $meta_query,
+				'fields'     => 'ID',
+			)
+		);
+
+		$query_args['users'] = $users;
+	}
+	return $query_args;
+}
+add_filter( 'woocommerce_analytics_customers_query_args', 'leaderboards_custom_customers_query_args', 999 );
+
+
+/**
+ * Leaderboards custom_customers_query_args.
+ *
+ * @param  $query_vars
+ *
+ * @return
+ */
+function leaderboards_custom_coupons_query_args( $query_args ) {
+	if ( isset( $_GET['business_number'] ) && ! empty( $_GET['business_number'] ) ) {
+
+		$business_number = sanitize_text_field( $_GET['business_number'] );
+
+		$meta_query = array(
+			'key'     => 'business_number',
+			'value'   => $business_number,
+			'compare' => '=',
+		);
+
+		$args = array(
+			'post_type'      => 'shop_coupon',
+			'posts_per_page' => -1,
+			'meta_query'     => array( $meta_query ),
+		);
+
+		// Get coupon posts
+		$coupons = get_posts( $args );
+
+		// Get the coupon IDs
+		$coupon_ids = wp_list_pluck( $coupons, 'ID' );
+
+		$query_args['coupons'] = $coupon_ids;
+	}
+	return $query_args;
+}
+add_filter( 'woocommerce_analytics_coupons_query_args', 'leaderboards_custom_coupons_query_args', 999 );
+
+
+/**
+ * Leaderboards custom_customers_query_args.
+ *
+ * @param  $query_vars
+ *
+ * @return
+ */
+function leaderboards_custom_categories_query_args( $query_args ) {
+	if ( isset( $_GET['business_number'] ) && ! empty( $_GET['business_number'] ) ) {
+
+		$business_number = sanitize_text_field( $_GET['business_number'] );
+
+		global $wpdb;
+
+		$query = $wpdb->prepare(
+			"SELECT tm.term_id
+			FROM {$wpdb->termmeta} tm
+			INNER JOIN {$wpdb->term_taxonomy} tt ON tm.term_id = tt.term_id
+			WHERE tm.meta_key = %s
+			AND tm.meta_value = %s
+			AND tt.taxonomy = %s",
+			'business_number',
+			$business_number,
+			'product_cat'
+		);
+
+		$term_ids                        = $wpdb->get_col( $query );
+		$query_args['category_includes'] = $term_ids;
+	}
+	return $query_args;
+}
+add_filter( 'woocommerce_analytics_categories_query_args', 'leaderboards_custom_categories_query_args', 999 );
+
+
+function filter_products_by_business_number( $query ) {
+	if ( isset( $_GET['business_number'] ) && ! empty( $_GET['business_number'] ) ) {
+
+		$business_number = sanitize_text_field( $_GET['business_number'] );
+		$post_types      = $query->get( 'post_type' );
+		if ( is_array( $post_types ) && in_array( 'product', $post_types ) || in_array( 'product_variation', $post_types ) ) {
+
+			$meta_query = array(
+				array(
+					'key'     => 'business_number',
+					'value'   => $business_number,
+					'compare' => '=',
+				),
+			);
+
+			$query->set( 'meta_query', $meta_query );
+		}
+	}
+}
+
+add_action( 'pre_get_posts', 'filter_products_by_business_number' );

@@ -257,6 +257,11 @@ function ffintegration_beautify_users_data( $user_data ) {
 		'export_license_no',
 		'billing_address_text',
 		'shipping_address_text',
+		'store_name',
+		'ref_business_name',
+		'ref_business_number',
+		'store_geo_location',
+		'store_meta_data',
 	);
 
 	foreach ( $other_fields as $field ) {
@@ -332,6 +337,11 @@ function ffintegration_update_user_data( $user_id, $update_data, $is_create = fa
 		'export_license_no',
 		'billing_address_text',
 		'shipping_address_text',
+		'store_name',
+		'ref_business_name',
+		'ref_business_number',
+		'store_geo_location',
+		'store_meta_data',
 	);
 
 	// Update other fields.

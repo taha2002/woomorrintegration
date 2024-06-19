@@ -1,0 +1,17 @@
+{
+    "name": "tahabou/woomorrintegration",
+    "autoload": {
+        "psr-4": {
+            "Woomorrintegration\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "TahaBou",
+            "email": "tahadevbou@gmail.com"
+        }
+    ],
+    "require": {
+        "spipu/html2pdf": "^5.2"
+    }
+}
