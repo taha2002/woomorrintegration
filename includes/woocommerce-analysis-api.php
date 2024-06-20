@@ -387,11 +387,13 @@ add_action( 'rest_api_init', 'register_woocommerce_analysis_endpoint' );
 /**
  * Check API key for access to WooCommerce analysis endpoint.
  *
+ * @param WP_REST_Request $request The request object.
  * @return bool Whether the API key is valid.
  */
-function check_api_key() {
+function check_api_key( WP_REST_Request $request ) {
 	$api_key      = get_option( 'woomorrintegration_api_secret_key' );
-	$provided_key = isset( $_SERVER['HTTP_X_FFINTEGRATION_API_KEY'] ) ? sanitize_text_field( $_SERVER['HTTP_X_FFINTEGRATION_API_KEY'] ) : '';
+	$provided_key = $request->get_header( 'auth' );
+	// $provided_key = isset( $_SERVER['HTTP_X_FFINTEGRATION_API_KEY'] ) ? sanitize_text_field( $_SERVER['HTTP_X_FFINTEGRATION_API_KEY'] ) : '';
 	return $provided_key === $api_key;
 }
 

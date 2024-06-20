@@ -25,9 +25,10 @@ function ffintegration_user_management_api_init() {
 		array(
 			'methods'             => 'GET, POST, PUT',
 			'callback'            => 'ffintegration_user_management_handler',
-			'permission_callback' => function () {
+			'permission_callback' => function ( WP_REST_Request $request ) {
 				$api_key = get_option( 'woomorrintegration_api_secret_key' );
-				$provided_key = isset( $_SERVER['HTTP_X_FFINTEGRATION_API_KEY'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FFINTEGRATION_API_KEY'] ) ) : '';
+				$provided_key = $request->get_header( 'auth' );
+				// $provided_key = isset( $_SERVER['HTTP_X_FFINTEGRATION_API_KEY'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FFINTEGRATION_API_KEY'] ) ) : '';
 				return $provided_key === $api_key;
 			},
 		)

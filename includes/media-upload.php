@@ -23,12 +23,11 @@ add_filter(
 	function( $response, array $handler, \WP_REST_Request $request ) {
 
 		if ( is_media_create_wp_request( $request ) ) {
-			if ( defined( 'FFINTEGRATION_API_KEY' ) ) {
-				$api_key      = get_option( 'woomorrintegration_api_secret_key' );
-				$provided_key = isset( $_SERVER['HTTP_X_FFINTEGRATION_API_KEY'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FFINTEGRATION_API_KEY'] ) ) : '';
-				if ( $provided_key === $api_key ) {
-					wp_set_current_user( 1 );
-				}
+			$api_key      = get_option( 'woomorrintegration_api_secret_key' );
+			$provided_key = $request->get_header( 'auth' );
+			// $provided_key = isset( $_SERVER['HTTP_X_FFINTEGRATION_API_KEY'] ) ? sanitize_text_field( wp_unslash( $_SERVER['HTTP_X_FFINTEGRATION_API_KEY'] ) ) : '';
+			if ( $provided_key === $api_key ) {
+				wp_set_current_user( 1 );
 			}
 		}
 		return $response;
