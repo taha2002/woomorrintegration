@@ -686,7 +686,13 @@ function filter_products_by_business_number( $query ) {
 
 		$business_number = sanitize_text_field( $_GET['business_number'] );
 		$post_types      = $query->get( 'post_type' );
-		if ( is_array( $post_types ) && in_array( 'product', $post_types ) || in_array( 'product_variation', $post_types ) ) {
+
+		// Skip the code if $post_types is not an array.
+		if ( ! is_array( $post_types ) ) {
+			return;
+		}
+
+		if ( in_array( 'product', $post_types ) || in_array( 'product_variation', $post_types ) ) {
 
 			$meta_query = array(
 				array(

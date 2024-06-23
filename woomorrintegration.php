@@ -3,7 +3,7 @@
  * Plugin Name:       Woomorrintegration
  * Plugin URI:        https://morr.biz/
  * Description:       Add WooCommmerce integration to morr.
- * Version:           1.0.2
+ * Version:           1.0.29
  * Author:            Taha Bou
  * Author URI:        http://taha2002.github.io/
  * Text Domain:       WOOMORRINTEGRATION
@@ -24,30 +24,30 @@ $ran_filters = array();
 
 
 // add_filter(
-// 	'all',
-// 	function ( $tag ) {
-// 		global $ran_filters;
-// 		$ran_filters[] = $tag;
-// 		return $tag;
-// 	}
+// 'all',
+// function ( $tag ) {
+// global $ran_filters;
+// $ran_filters[] = $tag;
+// return $tag;
+// }
 // );
 
 // add_action(
-// 	'shutdown',
-// 	function () {
-// 		global $ran_filters;
+// 'shutdown',
+// function () {
+// global $ran_filters;
 
-// 		if ( ! empty( $ran_filters ) ) {
-// 			echo '<pre>';
-// 			echo 'Filters that have been run:';
-// 			echo '<ul>';
-// 			foreach ( $ran_filters as $filter ) {
-// 				echo '<li>' . esc_html( $filter ) . '</li>';
-// 			}
-// 			echo '</ul>';
-// 			echo '</pre>';
-// 		}
-// 	}
+// if ( ! empty( $ran_filters ) ) {
+// echo '<pre>';
+// echo 'Filters that have been run:';
+// echo '<ul>';
+// foreach ( $ran_filters as $filter ) {
+// echo '<li>' . esc_html( $filter ) . '</li>';
+// }
+// echo '</ul>';
+// echo '</pre>';
+// }
+// }
 // );
 
 // Define constants.
