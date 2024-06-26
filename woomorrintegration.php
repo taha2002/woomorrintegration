@@ -87,6 +87,7 @@ function woomorrintegration_template_redirect() {
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/functions.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'admin/admin-page.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/user-management-api.php';
+require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/store-chat-api.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/woomorrintegration-session.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/media-upload.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/woo-custom-api-fields.php';
@@ -99,6 +100,7 @@ require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'app/updater.php';
 function woomorrintegration_activate() {
 	woomorrintegration_set_rewrite_rules();
 	flush_rewrite_rules();
+	storechat_table_install();
 }
 
 /**
@@ -106,4 +108,49 @@ function woomorrintegration_activate() {
  */
 function woomorrintegration_deactivate() {
 	flush_rewrite_rules();
+}
+
+/**
+ * Install custom table for storing chat messages.
+ */
+function storechat_table_install() {
+	global $wpdb;
+
+	$table_name      = $wpdb->prefix . 'store_chat_messages';
+	$charset_collate = $wpdb->get_charset_collate();
+	$table_version   = '1.0';
+
+	$installed_db_ver = get_option( 'woomorrintegration_db_version' );
+
+	if ( $installed_db_ver != $table_version ) {
+
+		$sql = "CREATE TABLE $table_name (
+			message_id mediumint(9) NOT NULL AUTO_INCREMENT,
+			status VARCHAR(255) NULL,
+			message_type VARCHAR(255) NULL,
+			sender_id BIGINT NULL,
+			receiver_user BIGINT NULL,
+			message TEXT NULL,
+			replied_to_message_id BIGINT NULL,
+			related_to_message_id BIGINT NULL,
+			forwarded_from_message_id BIGINT NULL,
+			seen_by_users JSON NULL,
+			reactions JSON NULL,
+			sender_desplay_name VARCHAR(255) NULL,
+			attachment_url VARCHAR(255) NULL,
+			attachment_name VARCHAR(255) NULL,
+			message_opened BOOLEAN NULL,
+			message_open_datetime TIMESTAMP NULL,
+			created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+			updated_at TIMESTAMP NULL ON UPDATE CURRENT_TIMESTAMP,
+			app_name VARCHAR(255) NULL,
+			attachment_type VARCHAR(255) NULL,
+			data JSON NULL,
+			PRIMARY KEY (message_id)
+		) $charset_collate;";
+
+		require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+		dbDelta( $sql );
+		add_option( 'woomorrintegration_db_version', $table_version );
+	}
 }

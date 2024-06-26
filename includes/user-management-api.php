@@ -137,6 +137,16 @@ function ffintegration_user_management_handler( $data ) {
 			return new WP_REST_Response( $users_info, 200 );
 		}
 
+		if ( isset( $request_params['business_number'] ) && ! empty( $request_params['business_number'] ) ) {
+			$existing_users = get_users_by_meta( 'business_number', $request_params['business_number']);
+			$users_info     = array();
+			foreach ( $existing_users as $user ) {
+				$user_info    = ffintegration_beautify_users_data( $user );
+				$users_info[] = $user_info;
+			}
+			return new WP_REST_Response( $users_info, 200 );
+		}
+
 		$response = ffintegration_retrive_users_data( $user_id, $search_for, $role );
 	}
 
