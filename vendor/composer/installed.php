@@ -1,0 +1,41 @@
+<?php return array(
+    'root' => array(
+        'pretty_version' => 'dev-main',
+        'version' => 'dev-main',
+        'type' => 'library',
+        'install_path' => __DIR__ . '/../../',
+        'aliases' => array(),
+        'reference' => 'e011d2b8bc3d839a2bd549af62f16a4cd15291f8',
+        'name' => 'tahabou/woomorrintegration',
+        'dev' => true,
+    ),
+    'versions' => array(
+        'spipu/html2pdf' => array(
+            'pretty_version' => 'v5.2.8',
+            'version' => '5.2.8.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../spipu/html2pdf',
+            'aliases' => array(),
+            'reference' => '6c94dcd48c94c6c73f206629839c1ebd81e8c726',
+            'dev_requirement' => false,
+        ),
+        'tahabou/woomorrintegration' => array(
+            'pretty_version' => 'dev-main',
+            'version' => 'dev-main',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../../',
+            'aliases' => array(),
+            'reference' => 'e011d2b8bc3d839a2bd549af62f16a4cd15291f8',
+            'dev_requirement' => false,
+        ),
+        'tecnickcom/tcpdf' => array(
+            'pretty_version' => '6.7.5',
+            'version' => '6.7.5.0',
+            'type' => 'library',
+            'install_path' => __DIR__ . '/../tecnickcom/tcpdf',
+            'aliases' => array(),
+            'reference' => '951eabf0338ec2522bd0d5d9c79b08a3a3d36b36',
+            'dev_requirement' => false,
+        ),
+    ),
+);
