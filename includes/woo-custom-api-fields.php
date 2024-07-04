@@ -54,6 +54,44 @@ function register_ffintegration_custom_field() {
 
 	register_rest_field(
 		'shop_order',
+		'from_business_name',
+		array(
+			'get_callback'    => 'get_ffintegration_custom_api_field',
+			'update_callback' => 'update_ffintegration_custom_api_field',
+			'schema'          => null,
+		)
+	);
+	register_rest_field(
+		'shop_order',
+		'from_business_number',
+		array(
+			'get_callback'    => 'get_ffintegration_custom_api_field',
+			'update_callback' => 'update_ffintegration_custom_api_field',
+			'schema'          => null,
+		)
+	);
+
+	register_rest_field(
+		'shop_order',
+		'for_business_name',
+		array(
+			'get_callback'    => 'get_ffintegration_custom_api_field',
+			'update_callback' => 'update_ffintegration_custom_api_field',
+			'schema'          => null,
+		)
+	);
+	register_rest_field(
+		'shop_order',
+		'for_business_number',
+		array(
+			'get_callback'    => 'get_ffintegration_custom_api_field',
+			'update_callback' => 'update_ffintegration_custom_api_field',
+			'schema'          => null,
+		)
+	);
+
+	register_rest_field(
+		'shop_order',
 		'status_logs',
 		array(
 			'get_callback' => 'get_order_status_logs',
@@ -204,6 +242,35 @@ function ffintegration_filter_product_or_orders_by_metadata( $args, $request ) {
 			$args['meta_query'][] = $source_meta_query;
 		}
 	}
+
+	$fields = array(
+		'business_name',
+		'from_business_number',
+		'from_business_name',
+		'for_business_name',
+		'for_business_number',
+	);
+
+	foreach ( $fields as $field ) {
+		if ( isset( $params[ $field ] ) && ! empty( $params[ $field ] ) ) {
+			$sanitized_value = sanitize_text_field( $params[ $field ] );
+
+			$source_meta_query = array(
+				'key'   => $field,
+				'value' => $sanitized_value,
+			);
+
+			if ( isset( $args['meta_query'] ) ) {
+				$args['meta_query']['relation'] = 'AND';
+				$args['meta_query'][]           = $source_meta_query;
+			} else {
+				$args['meta_query']   = array();
+				$args['meta_query'][] = $source_meta_query;
+			}
+			break;
+		}
+	}
+
 	return $args;
 };
 add_filter( 'woocommerce_rest_product_object_query', 'ffintegration_filter_product_or_orders_by_metadata', 10, 2 );

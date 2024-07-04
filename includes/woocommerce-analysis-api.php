@@ -10,6 +10,95 @@ if ( ! defined( 'WPINC' ) ) {
 	die;
 }
 
+function get_customer_order_data( $customer_id, $date_start, $date_end ) {
+	global $wpdb;
+	$order_table = $wpdb->prefix . 'posts';
+	$meta_table  = $wpdb->prefix . 'postmeta';
+
+	// SQL query to get aggregated order data grouped by day
+	$results = $wpdb->get_results($wpdb->prepare("
+        SELECT 
+            DATE(p.post_date) as order_date,
+            SUM(CASE WHEN oim.meta_key = '_line_total' THEN oim.meta_value ELSE 0 END) as total_sales,
+            SUM(CASE WHEN oim.meta_key = '_line_tax' THEN oim.meta_value ELSE 0 END) as taxes,
+            SUM(CASE WHEN oim.meta_key = '_line_total' THEN oim.meta_value ELSE 0 END) - 
+            SUM(CASE WHEN oim.meta_key = '_line_tax' THEN oim.meta_value ELSE 0 END) as net_revenue,
+            SUM(CASE WHEN oim.meta_key = '_qty' THEN oim.meta_value ELSE 0 END) as num_items_sold,
+            COUNT(DISTINCT p.ID) as orders_count,
+            ABS(SUM(CASE WHEN p.post_type = 'shop_order_refund' THEN oim.meta_value ELSE 0 END)) as refunds,
+            SUM(CASE WHEN oim.meta_key = '_cart_discount' THEN oim.meta_value ELSE 0 END) as coupons
+        FROM $order_table p
+        LEFT JOIN $meta_table pm ON p.ID = pm.post_id
+        LEFT JOIN $order_items_table oi ON p.ID = oi.order_id
+        LEFT JOIN $order_itemmeta_table oim ON oi.order_item_id = oim.order_item_id
+        WHERE p.post_type IN ('shop_order', 'shop_order_refund')
+        AND p.post_status IN ('wc-completed', 'wc-processing', 'wc-on-hold', 'wc-refunded')
+        AND pm.meta_key = '_customer_user'
+        AND pm.meta_value = %d
+        GROUP BY order_date
+    ", $customer_id), ARRAY_A);
+
+	var_dump($results);
+	// Initialize totals
+	$totals = array(
+		'gross_sales'    => 0,
+		'refunds'        => 0,
+		'coupons'        => 0,
+		'net_revenue'    => 0,
+		'taxes'          => 0,
+		'shipping'       => 0,  // Assuming shipping is 0 for simplicity
+		'total_sales'    => 0,
+		'num_items_sold' => 0,
+		'orders_count'   => 0,
+		'products'       => 0,  // Static value, modify if necessary
+		'coupons_count'  => 0,
+		'segments'       => array(),
+	);
+
+	// Initialize intervals
+	$intervals = array();
+
+	// Process each day's results
+	foreach ( $results as $result ) {
+		$intervals[] = array(
+			'interval'       => $result['order_date'],
+			'date_start'     => $result['order_date'] . ' 00:00:00',
+			'date_start_gmt' => $result['order_date'] . ' 00:00:00',
+			'date_end'       => $result['order_date'] . ' 23:59:59',
+			'date_end_gmt'   => $result['order_date'] . ' 23:59:59',
+			'subtotals'      => array(
+				'gross_sales' => floatval( $result['total_sales'] ),
+				'refunds'     => floatval( $result['refunds'] ),
+				'coupons'     => floatval( $result['coupons'] ),
+				'net_revenue' => floatval( $result['net_revenue'] ),
+				'taxes'       => floatval( $result['taxes'] ),
+				'shipping'    => 0,  // Assuming shipping is 0 for simplicity
+			),
+		);
+
+		// Aggregate totals
+		$totals['gross_sales']    += floatval( $result['total_sales'] );
+		$totals['refunds']        += floatval( $result['refunds'] );
+		$totals['coupons']        += floatval( $result['coupons'] );
+		$totals['net_revenue']    += floatval( $result['net_revenue'] );
+		$totals['taxes']          += floatval( $result['taxes'] );
+		$totals['total_sales']    += floatval( $result['total_sales'] );
+		$totals['num_items_sold'] += intval( $result['num_items_sold'] );
+		$totals['orders_count']   += intval( $result['orders_count'] );
+	}
+
+	// Calculate averages after totals are aggregated
+	$totals['avg_order_value']     = $totals['orders_count'] > 0 ? $totals['gross_sales'] / $totals['orders_count'] : 0;
+	$totals['avg_items_per_order'] = $totals['orders_count'] > 0 ? $totals['num_items_sold'] / $totals['orders_count'] : 0;
+
+	// Prepare the final response
+	$data = array(
+		'totals'    => $totals,
+		'intervals' => $intervals,
+	);
+
+	return $data;
+}
 
 /**
  * Filter hook for modifying revenue query arguments in WooCommerce analytics.
@@ -42,6 +131,10 @@ function woocommerce_analytics_revenue_query_args_filter( $query_vars ) {
 
 		$query_vars['product_includes'] = $ids;
 	}
+
+	// $res = get_customer_order_data(38,"2024-04-01","2024-06-05");
+	// var_dump($res);
+	// wp_die("dd");
 	return $query_vars;
 }
 add_filter( 'woocommerce_analytics_revenue_query_args', 'woocommerce_analytics_revenue_query_args_filter' );
