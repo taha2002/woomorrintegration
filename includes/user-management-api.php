@@ -138,13 +138,36 @@ function ffintegration_user_management_handler( $data ) {
 		}
 
 		if ( isset( $request_params['business_number'] ) && ! empty( $request_params['business_number'] ) ) {
-			$existing_users = get_users_by_meta( 'business_number', $request_params['business_number']);
+			$existing_users = get_users_by_meta( 'business_number', $request_params['business_number'] );
 			$users_info     = array();
 			foreach ( $existing_users as $user ) {
 				$user_info    = ffintegration_beautify_users_data( $user );
 				$users_info[] = $user_info;
 			}
 			return new WP_REST_Response( $users_info, 200 );
+		}
+		$other_filter_fields = array(
+			'store_url',
+			'store_short_url',
+			'store_icon_url',
+			'store_banner_uri',
+			'from_business_name',
+			'from_business_number',
+			'store_info',
+			'store_map_url',
+		);
+		foreach ( $other_filter_fields as $field ) {
+			if ( isset( $request_params[ $field ] ) && ! empty( $request_params[ $field ] ) ) {
+				$sanitized_value = sanitize_text_field( $request_params[ $field ] );
+
+				$existing_users = get_users_by_meta( $field, $sanitized_value );
+				$users_info     = array();
+				foreach ( $existing_users as $user ) {
+					$user_info    = ffintegration_beautify_users_data( $user );
+					$users_info[] = $user_info;
+				}
+				return new WP_REST_Response( $users_info, 200 );
+			}
 		}
 
 		$response = ffintegration_retrive_users_data( $user_id, $search_for, $role );
@@ -273,6 +296,14 @@ function ffintegration_beautify_users_data( $user_data ) {
 		'ref_business_number',
 		'store_geo_location',
 		'store_meta_data',
+		'store_url',
+		'store_short_url',
+		'store_icon_url',
+		'store_banner_uri',
+		'from_business_name',
+		'from_business_number',
+		'store_info',
+		'store_map_url',
 	);
 
 	foreach ( $other_fields as $field ) {
@@ -353,6 +384,7 @@ function ffintegration_update_user_data( $user_id, $update_data, $is_create = fa
 		'ref_business_number',
 		'store_geo_location',
 		'store_meta_data',
+
 	);
 
 	// Update other fields.
@@ -366,6 +398,15 @@ function ffintegration_update_user_data( $user_id, $update_data, $is_create = fa
 	$other_unique_fields_to_update = array(
 		'business_number',
 		'user_mobile',
+
+		'store_url',
+		'store_short_url',
+		'store_icon_url',
+		'store_banner_uri',
+		'from_business_name',
+		'from_business_number',
+		'store_info',
+		'store_map_url',
 	);
 
 	// Update other unique fields.
@@ -482,6 +523,15 @@ function ffintegration_create_user( $data ) {
 	$unique_fields = array(
 		'business_number',
 		'user_mobile',
+
+		'store_url',
+		'store_short_url',
+		'store_icon_url',
+		'store_banner_uri',
+		'from_business_name',
+		'from_business_number',
+		'store_info',
+		'store_map_url',
 	);
 
 	// Update other unique fields.
@@ -494,7 +544,7 @@ function ffintegration_create_user( $data ) {
 				$response['errorField'] = $field;
 				return new WP_REST_Response( $response, 500 );
 			}
-			update_user_meta( $user_id, $field, sanitize_text_field( $data[ $field ] ) );
+			// update_user_meta( $user_id, $field, sanitize_text_field( $data[ $field ] ) );
 		}
 	}
 
