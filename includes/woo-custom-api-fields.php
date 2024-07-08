@@ -241,6 +241,33 @@ function ffintegration_filter_product_or_orders_by_metadata( $args, $request ) {
 			$args['meta_query']   = array();
 			$args['meta_query'][] = $source_meta_query;
 		}
+
+		return $args;
+	}
+
+	if ( isset( $params['store_name'] ) && ! empty( $params['store_name'] ) ) {
+		$store_name = sanitize_text_field( $params['store_name'] );
+		$user       = get_user_by_meta( 'store_name', $store_name );
+		if ( $user ) {
+			$business_number = get_user_meta( $user->ID, 'business_number', true );
+
+			if ( $business_number ) {
+				$source_meta_query = array(
+					'key'   => 'business_number',
+					'value' => $business_number,
+				);
+
+				if ( isset( $args['meta_query'] ) ) {
+					$args['meta_query']['relation'] = 'AND';
+					$args['meta_query'][]           = $source_meta_query;
+				} else {
+					$args['meta_query']   = array();
+					$args['meta_query'][] = $source_meta_query;
+				}
+
+				return $args;
+			}
+		}
 	}
 
 	$fields = array(
