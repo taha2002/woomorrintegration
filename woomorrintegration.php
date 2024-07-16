@@ -92,6 +92,7 @@ require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/woomorrintegration-sessio
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/media-upload.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/woo-custom-api-fields.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/woocommerce-analysis-api.php';
+require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/extra-apis.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'app/updater.php';
 
 /**
