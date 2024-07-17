@@ -83,7 +83,7 @@ function get_order_items( WP_REST_Request $request ) {
 	$response_data = array();
 	foreach ( $order_items as $item_id => $item ) {
 		// $product   = $item->get_product();
-		$variation = $item->get_product_variation();
+		$variation = $item->get_variation_id();
 
 		$response_data[] = array(
 			'order_id'        => $order->get_id(),
@@ -117,28 +117,24 @@ function get_order_items( WP_REST_Request $request ) {
 function get_recent_order_items( WP_REST_Request $request ) {
 	$order_per_page = $request->get_param( 'order_per_page' );
 
-	// Retrieve the last modified orders.
-	$orders_query = new WP_Query(
+	$orders = wc_get_orders(
 		array(
-			'post_type'      => 'shop_order',
-			'posts_per_page' => $order_per_page,
-			'orderby'        => 'modified',
-			'order'          => 'DESC',
+			'limit'   => $order_per_page,
+			'orderby' => 'modified',
+			'order'   => 'DESC',
 		)
 	);
 
-	if ( $orders_query->have_posts() ) {
+	if ( ! empty( $orders ) ) {
 		$response_data = array();
 
-		while ( $orders_query->have_posts() ) {
-			$orders_query->the_post();
-			$order = wc_get_order( get_the_ID() );
+		foreach ( $orders as $order ) {
 
 			// Get the order items.
 			$order_items = $order->get_items();
 
 			foreach ( $order_items as $item_id => $item ) {
-				$variation = $item->get_product_variation();
+				$variation = $item->get_variation_id();
 
 				$response_data[] = array(
 					'order_id'        => $order->get_id(),
