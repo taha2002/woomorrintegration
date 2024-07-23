@@ -13,8 +13,8 @@ if ( ! defined( 'WPINC' ) ) {
 
 function handle_preflight() {
 	$origin = get_http_origin();
-	// header( 'Access-Control-Allow-Origin: * ' ); .
-	header( 'Access-Control-Allow-Origin: ' . $origin_url );
+	header( 'Access-Control-Allow-Origin: * ' );
+	// header( 'Access-Control-Allow-Origin: ' . $origin_url );
 	header( 'Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE' );
 	header( 'Access-Control-Allow-Credentials: true' );
 	header( 'Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, x_ffintegration_api_key, Authorization' );
@@ -22,6 +22,12 @@ function handle_preflight() {
 	if ( 'OPTIONS' == $_SERVER['REQUEST_METHOD'] ) {
 		status_header( 200 );
 		exit();
+	}
+
+	if ( isset( $_SERVER['HTTP_REFERER'] ) ) {
+		$requesting_domain = $_SERVER['HTTP_REFERER'];
+		header( "X-Frame-Options: ALLOW-FROM $requesting_domain" );
+
 	}
 }
 add_action( 'init', 'handle_preflight' );

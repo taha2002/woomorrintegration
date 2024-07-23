@@ -400,6 +400,10 @@ function init_order_status_history( $order_id ) {
 
 	$change_log['status'] = $initial_status;
 
+	if ( in_array( $initial_status, array( 'auto-draft' ) ) ) {
+		$change_log['price'] = $order->get_total();
+	}
+
 	$request_user = get_request_user();
 	if ( $request_user ) {
 		$change_log['user_id']           = $request_user->ID;
