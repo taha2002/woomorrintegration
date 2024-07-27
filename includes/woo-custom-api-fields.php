@@ -34,6 +34,16 @@ function register_ffintegration_custom_field() {
 	);
 
 	register_rest_field(
+		'product',
+		'min_price',
+		array(
+			'get_callback'    => 'get_ffintegration_custom_api_field',
+			'update_callback' => 'update_ffintegration_custom_api_field',
+			'schema'          => null,
+		)
+	);
+
+	register_rest_field(
 		'shop_order',
 		'business_name',
 		array(
