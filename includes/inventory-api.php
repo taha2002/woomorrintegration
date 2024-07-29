@@ -18,19 +18,10 @@ function woomorrintegration_inventory_api_init() {
 	// Register inventory voucher endpoints.
 	register_rest_route(
 		'woomorrintegration/v1',
-		'/inventoryvoucher',
+		'/inventoryvoucher(?:/(?P<id>\d+))?',
 		array(
-			'methods'             => array( 'GET', 'POST', 'PUT', 'DELETE' ),
+			'methods'             => 'GET, POST, PUT, DELETE',
 			'callback'            => 'woomorrintegration_inventory_voucher_handler',
-			'permission_callback' => 'woomorrintegration_inv_permission_check',
-		)
-	);
-	register_rest_route(
-		'woomorrintegration/v1',
-		'/inventoryvoucher/(?P<id>\d+)',
-		array(
-			'methods'             => 'GET',
-			'callback'            => 'woomorrintegration_get_inventory_voucher_by_id',
 			'permission_callback' => 'woomorrintegration_inv_permission_check',
 		)
 	);
@@ -38,22 +29,14 @@ function woomorrintegration_inventory_api_init() {
 	// Register inventory voucher detail endpoints.
 	register_rest_route(
 		'woomorrintegration/v1',
-		'/inventoryvoucherdetail',
+		'/inventoryvoucherdetail(?:/(?P<id>\d+))?',
 		array(
 			'methods'             => array( 'GET', 'POST', 'PUT', 'DELETE' ),
 			'callback'            => 'woomorrintegration_inventory_voucher_detail_handler',
 			'permission_callback' => 'woomorrintegration_inv_permission_check',
 		)
 	);
-	register_rest_route(
-		'woomorrintegration/v1',
-		'/inventoryvoucherdetail/(?P<id>\d+)',
-		array(
-			'methods'             => 'GET',
-			'callback'            => 'woomorrintegration_get_inventory_voucher_detail_by_id',
-			'permission_callback' => 'woomorrintegration_inv_permission_check',
-		)
-	);
+
 }
 add_action( 'rest_api_init', 'woomorrintegration_inventory_api_init' );
 
@@ -78,7 +61,6 @@ function woomorrintegration_inv_permission_check( WP_REST_Request $request ) {
 function woomorrintegration_inventory_voucher_handler( WP_REST_Request $request ) {
 	global $wpdb;
 	$table_name = $wpdb->prefix . 'inventory_voucher';
-
 	switch ( $request->get_method() ) {
 		case 'POST':
 			return woomorrintegration_create_inventory_voucher( $wpdb, $table_name, $request );
@@ -155,7 +137,7 @@ function woomorrintegration_inventory_get_sanitized_data( WP_REST_Request $reque
 function woomorrintegration_get_inventory_voucher_by_id( WP_REST_Request $request ) {
 	global $wpdb;
 	$table_name = $wpdb->prefix . 'inventory_voucher';
-	$voucher_id = intval( $request->get_param( 'id' ) );
+	$voucher_id = isset( $request['id'] ) ? intval( $request['id'] ) : 0;
 
 	if ( empty( $voucher_id ) ) {
 		return new WP_REST_Response( array( 'message' => 'Voucher ID is required' ), 400 );
@@ -177,10 +159,7 @@ function woomorrintegration_get_inventory_voucher_by_id( WP_REST_Request $reques
 	}
 
 	return new WP_REST_Response(
-		array(
-			'message'      => 'Voucher retrieved',
-			'voucher_data' => $voucher,
-		),
+		$voucher,
 		200
 	);
 }
@@ -236,6 +215,11 @@ function woomorrintegration_create_inventory_voucher( $wpdb, $table_name, $reque
  * @return WP_REST_Response The response.
  */
 function woomorrintegration_get_inventory_vouchers( $wpdb, $table_name, $request ) {
+	$id = isset( $request['id'] ) ? intval( $request['id'] ) : 0;
+	if ( ! empty( $id ) ) {
+		return woomorrintegration_get_inventory_voucher_by_id( $request );
+	}
+
 	$filters = array(
 		'from_business_number' => sanitize_text_field( $request->get_param( 'from_business_number' ) ),
 		'from_business_name'   => sanitize_text_field( $request->get_param( 'from_business_name' ) ),
@@ -267,10 +251,7 @@ function woomorrintegration_get_inventory_vouchers( $wpdb, $table_name, $request
 	}
 
 	return new WP_REST_Response(
-		array(
-			'message'  => 'Vouchers retrieved',
-			'vouchers' => $results,
-		),
+		$results,
 		200
 	);
 }
@@ -284,7 +265,7 @@ function woomorrintegration_get_inventory_vouchers( $wpdb, $table_name, $request
  * @return WP_REST_Response The response.
  */
 function woomorrintegration_update_inventory_voucher( $wpdb, $table_name, $request ) {
-	$voucher_id = intval( $request->get_param( 'inventory_voucher_id' ) );
+	$voucher_id = isset( $request['id'] ) ? intval( $request['id'] ) : 0;
 
 	if ( empty( $voucher_id ) ) {
 		return new WP_REST_Response( array( 'message' => 'Voucher ID is required' ), 400 );
@@ -313,11 +294,7 @@ function woomorrintegration_update_inventory_voucher( $wpdb, $table_name, $reque
 	);
 
 	return new WP_REST_Response(
-		array(
-			'message'      => 'Voucher updated',
-			'voucher_id'   => $voucher_id,
-			'voucher_data' => $voucher,
-		),
+		$voucher,
 		200
 	);
 }
@@ -331,7 +308,7 @@ function woomorrintegration_update_inventory_voucher( $wpdb, $table_name, $reque
  * @return WP_REST_Response The response.
  */
 function woomorrintegration_delete_inventory_voucher( $wpdb, $table_name, $request ) {
-	$voucher_id = intval( $request->get_param( 'inventory_voucher_id' ) );
+	$voucher_id = isset( $request['id'] ) ? intval( $request['id'] ) : 0;
 
 	if ( empty( $voucher_id ) ) {
 		return new WP_REST_Response( array( 'message' => 'Voucher ID is required' ), 400 );
@@ -384,45 +361,6 @@ function woomorrintegration_inventory_voucher_detail_handler( WP_REST_Request $r
 		default:
 			return new WP_REST_Response( array( 'message' => 'Invalid request method' ), 405 );
 	}
-}
-
-/**
- * Retrieve an inventory voucher detail by ID.
- *
- * @param WP_REST_Request $request The REST API request.
- * @return WP_REST_Response The response.
- */
-function woomorrintegration_get_inventory_voucher_detail_by_id( WP_REST_Request $request ) {
-	global $wpdb;
-	$table_name = $wpdb->prefix . 'inventory_voucher_detail';
-	$detail_id  = intval( $request->get_param( 'id' ) );
-
-	if ( empty( $detail_id ) ) {
-		return new WP_REST_Response( array( 'message' => 'Voucher Detail ID is required' ), 400 );
-	}
-
-	$detail = $wpdb->get_row(
-		$wpdb->prepare(
-			"SELECT * FROM $table_name WHERE inventory_voucher_detail_id = %d",
-			$detail_id
-		),
-		ARRAY_A
-	);
-
-	if ( null === $detail ) {
-		return new WP_REST_Response(
-			array( 'message' => 'Voucher detail not found' ),
-			404
-		);
-	}
-
-	return new WP_REST_Response(
-		array(
-			'message'        => 'Voucher detail retrieved',
-			'voucher_detail' => $detail,
-		),
-		200
-	);
 }
 
 /**
@@ -538,7 +476,7 @@ function woomorrintegration_create_inventory_voucher_detail( $wpdb, $table_name,
  * @return WP_REST_Response The response.
  */
 function woomorrintegration_get_inventory_voucher_details( $wpdb, $table_name, WP_REST_Request $request ) {
-	$voucher_id = $request->get_param( 'inventory_voucher_id' );
+	$voucher_id = isset( $request['id'] ) ? intval( $request['id'] ) : 0;
 
 	if ( ! empty( $voucher_id ) ) {
 		$details = $wpdb->get_results(
@@ -556,10 +494,7 @@ function woomorrintegration_get_inventory_voucher_details( $wpdb, $table_name, W
 	}
 
 	return new WP_REST_Response(
-		array(
-			'message'         => 'Voucher details retrieved successfully',
-			'voucher_details' => $details,
-		),
+		$details,
 		200
 	);
 }
@@ -573,7 +508,7 @@ function woomorrintegration_get_inventory_voucher_details( $wpdb, $table_name, W
  * @return WP_REST_Response The response.
  */
 function woomorrintegration_update_inventory_voucher_detail( $wpdb, $table_name, WP_REST_Request $request ) {
-	$detail_id = intval( $request->get_param( 'id' ) );
+	$detail_id = isset( $request['id'] ) ? intval( $request['id'] ) : 0;
 	$data      = woomorrintegration_inventory_voucher_detail_get_sanitized_data( $request );
 
 	$updated = $wpdb->update(
@@ -607,7 +542,7 @@ function woomorrintegration_update_inventory_voucher_detail( $wpdb, $table_name,
  * @return WP_REST_Response The response.
  */
 function woomorrintegration_delete_inventory_voucher_detail( $wpdb, $table_name, WP_REST_Request $request ) {
-	$detail_id = intval( $request->get_param( 'id' ) );
+	$detail_id = isset( $request['id'] ) ? intval( $request['id'] ) : 0;
 
 	if ( empty( $detail_id ) ) {
 		return new WP_REST_Response( array( 'message' => 'Voucher Detail ID is required' ), 400 );

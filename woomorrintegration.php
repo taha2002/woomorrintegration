@@ -87,6 +87,7 @@ function woomorrintegration_template_redirect() {
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/functions.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'admin/admin-page.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/user-management-api.php';
+require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/inventory-api.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/store-chat-api.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/woomorrintegration-session.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/media-upload.php';
