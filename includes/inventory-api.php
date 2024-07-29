@@ -197,11 +197,7 @@ function woomorrintegration_create_inventory_voucher( $wpdb, $table_name, $reque
 	);
 
 	return new WP_REST_Response(
-		array(
-			'message'      => 'Voucher created',
-			'voucher_id'   => $voucher_id,
-			'voucher_data' => $voucher,
-		),
+		$voucher,
 		201
 	);
 }
@@ -449,11 +445,16 @@ function woomorrintegration_create_inventory_voucher_detail( $wpdb, $table_name,
 	$new_detail_id = $wpdb->insert_id;
 
 	if ( $new_detail_id ) {
-		return new WP_REST_Response(
-			array(
-				'message'           => 'Voucher detail created successfully',
-				'voucher_detail_id' => $new_detail_id,
+		$new_row_data = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM $table_name WHERE inventory_voucher_detail_id = %d",
+				$new_detail_id
 			),
+			ARRAY_A
+		);
+
+		return new WP_REST_Response(
+			$new_row_data,
 			201
 		);
 	} else {
@@ -518,8 +519,16 @@ function woomorrintegration_update_inventory_voucher_detail( $wpdb, $table_name,
 	);
 
 	if ( false !== $updated ) {
+		$updated_row_data = $wpdb->get_row(
+			$wpdb->prepare(
+				"SELECT * FROM $table_name WHERE inventory_voucher_detail_id = %d",
+				$detail_id
+			),
+			ARRAY_A
+		);
+
 		return new WP_REST_Response(
-			array( 'message' => 'Voucher detail updated successfully' ),
+			$updated_row_data,
 			200
 		);
 	} else {

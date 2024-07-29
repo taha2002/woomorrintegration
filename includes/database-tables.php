@@ -23,7 +23,7 @@ function woomorrintegration_create_tables() {
 	$installed_db_ver = get_option( 'woomorrintegration_db_version' );
 
 	$table_name_chat = $wpdb->prefix . 'store_chat_messages';
-	$sql_chat        = "CREATE TABLE $table_name (
+	$sql_chat        = "CREATE TABLE $table_name_chat (
         message_id mediumint(9) NOT NULL AUTO_INCREMENT,
         status VARCHAR(255) NULL,
         message_type VARCHAR(255) NULL,
@@ -139,14 +139,10 @@ function woomorrintegration_create_tables() {
         average_price NUMERIC NULL,
         purchase_note TEXT NULL,
         customer_note TEXT NULL,
-        meta_fields TEXT NULL,
         weight NUMERIC NULL,
         length NUMERIC NULL,
         width NUMERIC NULL,
         height NUMERIC NULL,
-        tax_status TEXT NULL,
-        tax_class TEXT NULL,
-        shipping_class TEXT NULL,
         images TEXT NULL,
         mfg_batch_number TEXT NULL,
         mfg_serial_number TEXT NULL,
