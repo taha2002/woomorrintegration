@@ -96,6 +96,7 @@ require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/woocommerce-analysis-api.
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/extra-apis.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'app/updater.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/database-tables.php';
+require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/webhooks.php';
 
 /**
  * Activation hook callback function.
