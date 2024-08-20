@@ -221,6 +221,8 @@ function woomorrintegration_get_inventory_vouchers( $wpdb, $table_name, $request
 		'from_business_name'   => sanitize_text_field( $request->get_param( 'from_business_name' ) ),
 		'to_business_number'   => sanitize_text_field( $request->get_param( 'to_business_number' ) ),
 		'to_business_name'     => sanitize_text_field( $request->get_param( 'to_business_name' ) ),
+		'business_number'      => sanitize_text_field( $request->get_param( 'business_number' ) ),
+		'business_name'        => sanitize_text_field( $request->get_param( 'business_name' ) ),
 	);
 
 	$query    = "SELECT * FROM $table_name WHERE 1=1";
