@@ -21,7 +21,7 @@ function woomorrintegration_campaign_api_init() {
 		array(
 			'methods'             => 'GET, POST, PUT, DELETE',
 			'callback'            => 'woomorrintegration_campaign_handler',
-			'permission_callback' => 'woomorrintegration_inv_permission_check',
+			'permission_callback' => 'woomorrintegration_campaign_permission_check',
 		)
 	);
 
@@ -31,7 +31,7 @@ function woomorrintegration_campaign_api_init() {
 		array(
 			'methods'             => 'GET, POST, PUT, DELETE',
 			'callback'            => 'woomorrintegration_campaign_offer_handler',
-			'permission_callback' => 'woomorrintegration_inv_permission_check',
+			'permission_callback' => 'woomorrintegration_campaign_permission_check',
 		)
 	);
 
@@ -41,7 +41,7 @@ function woomorrintegration_campaign_api_init() {
 		array(
 			'methods'             => 'GET, POST, PUT, DELETE',
 			'callback'            => 'woomorrintegration_campaign_tracking_handler',
-			'permission_callback' => 'woomorrintegration_inv_permission_check',
+			'permission_callback' => 'woomorrintegration_campaign_permission_check',
 		)
 	);
 
@@ -51,12 +51,23 @@ function woomorrintegration_campaign_api_init() {
 		array(
 			'methods'             => 'GET, POST, PUT, DELETE',
 			'callback'            => 'woomorrintegration_campaign_user_offer_handler',
-			'permission_callback' => 'woomorrintegration_inv_permission_check',
+			'permission_callback' => 'woomorrintegration_campaign_permission_check',
 		)
 	);
 }
 add_action( 'rest_api_init', 'woomorrintegration_campaign_api_init' );
 
+/**
+ * Permission check for API requests.
+ *
+ * @param WP_REST_Request $request The REST API request.
+ * @return bool True if the request is authorized, false otherwise.
+ */
+function woomorrintegration_campaign_permission_check( WP_REST_Request $request ) {
+	$api_key      = get_option( 'woomorrintegration_api_secret_key' );
+	$provided_key = $request->get_header( 'auth' );
+	return $provided_key === $api_key;
+}
 
 /**
  * Main handler for campaign API requests.
@@ -920,12 +931,12 @@ function woomorrintegration_delete_campaign_tracking( $wpdb, $table_name, $reque
 // Campaign User Offer API Functions
 // ===================================================================
 
-**
- * Main handler for campaign user offer API requests .
+/**
+ *  Main handler for campaign user offer API requests .
  *
  * @param WP_REST_Request $request The REST API request .
  * @return WP_REST_Response The response .
- * /
+ */
 function woomorrintegration_campaign_user_offer_handler( WP_REST_Request $request ) {
 	global $wpdb;
 	$table_name = $wpdb->prefix . 'campaign_user_offer';
@@ -992,7 +1003,32 @@ function woomorrintegration_campaign_user_offer_get_sanitized_data( WP_REST_Requ
 		'offer_opens'             => intval( $request->get_param( 'offer_opens' ) ),
 		'offer_share_count'       => intval( $request->get_param( 'offer_share_count' ) ),
 		'offer_share_meta'        => sanitize_textarea_field( $request->get_param( 'offer_share_meta' ) ),
-		// ... (rest of the fields with appropriate sanitization)
+		'custom_one'              => sanitize_text_field( $request->get_param( 'custom_one' ) ),
+		'custom_two'              => sanitize_text_field( $request->get_param( 'custom_two' ) ),
+		'custom_three'            => sanitize_text_field( $request->get_param( 'custom_three' ) ),
+		'currency'                => sanitize_text_field( $request->get_param( 'currency' ) ),
+		'financial_year'          => sanitize_text_field( $request->get_param( 'financial_year' ) ),
+		'financial_period'        => sanitize_text_field( $request->get_param( 'financial_period' ) ),
+		'event_meta'              => sanitize_textarea_field( $request->get_param( 'event_meta' ) ),
+		'open_meta'               => sanitize_textarea_field( $request->get_param( 'open_meta' ) ),
+		'meta_fields'             => sanitize_textarea_field( $request->get_param( 'meta_fields' ) ),
+		'remarks'                 => sanitize_textarea_field( $request->get_param( 'remarks' ) ),
+		'store_meta'              => sanitize_textarea_field( $request->get_param( 'store_meta' ) ),
+		'workflow_meta'           => sanitize_textarea_field( $request->get_param( 'workflow_meta' ) ),
+		'share_url'               => esc_url_raw( $request->get_param( 'share_url' ) ),
+		'share_status'            => sanitize_text_field( $request->get_param( 'share_status' ) ),
+		'business_name'           => sanitize_text_field( $request->get_param( 'business_name' ) ),
+		'business_number'         => sanitize_text_field( $request->get_param( 'business_number' ) ),
+		'ref_business'            => sanitize_text_field( $request->get_param( 'ref_business' ) ),
+		'ref_business_number'     => sanitize_text_field( $request->get_param( 'ref_business_number' ) ),
+		'ref_user'                => sanitize_text_field( $request->get_param( 'ref_user' ) ),
+		'ref_appname'             => sanitize_text_field( $request->get_param( 'ref_appname' ) ),
+		'ref_datetime'            => sanitize_text_field( $request->get_param( 'ref_datetime' ) ),
+		'social_login_used'       => sanitize_text_field( $request->get_param( 'social_login_used' ) ),
+		'created_user'            => sanitize_text_field( $request->get_param( 'created_user' ) ),
+		'created_userid'          => intval( $request->get_param( 'created_userid' ) ),
+		'created_datetime'        => sanitize_text_field( $request->get_param( 'created_datetime' ) ),
+		'app_name'                => sanitize_text_field( $request->get_param( 'app_name' ) ),
 	);
 }
 
@@ -1086,12 +1122,11 @@ function woomorrintegration_get_campaign_user_offers( $wpdb, $table_name, $reque
 		return woomorrintegration_get_campaign_user_offer_by_id( $request );
 	}
 
-	// Add filters here as needed
+	// Add filters here as neede.
 	$filters = array(
 		'campaign_id'       => intval( $request->get_param( 'campaign_id' ) ),
 		'campaign_offer_id' => intval( $request->get_param( 'campaign_offer_id' ) ),
 		'user_id'           => intval( $request->get_param( 'user_id' ) ),
-		// ... add more filters as needed
 	);
 
 	$query    = "SELECT * FROM $table_name WHERE 1=1";
