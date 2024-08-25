@@ -137,7 +137,7 @@ function register_ffintegration_custom_field() {
 		)
 	);
 	register_rest_field(
-		'shop_coupon	',
+		'shop_coupon',
 		'business_number',
 		array(
 			'get_callback'    => 'get_ffintegration_custom_api_field',
