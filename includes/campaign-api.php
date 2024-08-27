@@ -242,6 +242,8 @@ function woomorrintegration_get_campaigns( $wpdb, $table_name, $request ) {
 		'campaign_name'        => sanitize_text_field( $request->get_param( 'campaign_name' ) ),
 	);
 
+	$search_term = sanitize_text_field( $request->get_param( 'search' ) );
+
 	$query    = "SELECT * FROM $table_name WHERE 1=1";
 	$bindings = array();
 
@@ -250,6 +252,11 @@ function woomorrintegration_get_campaigns( $wpdb, $table_name, $request ) {
 			$query     .= $wpdb->prepare( " AND $key = %s", $value );
 			$bindings[] = $value;
 		}
+	}
+
+	if ( ! empty( $search_term ) ) {
+		$search_query = $wpdb->prepare( " AND (campaign_name LIKE %s OR description LIKE %s)", '%' . $wpdb->esc_like( $search_term ) . '%', '%' . $wpdb->esc_like( $search_term ) . '%' );
+		$query .= $search_query;
 	}
 
 	$results = $wpdb->get_results( $wpdb->prepare( $query, $bindings ), ARRAY_A );
