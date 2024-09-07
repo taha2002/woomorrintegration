@@ -255,8 +255,8 @@ function woomorrintegration_get_campaigns( $wpdb, $table_name, $request ) {
 	}
 
 	if ( ! empty( $search_term ) ) {
-		$search_query = $wpdb->prepare( " AND (campaign_name LIKE %s OR description LIKE %s)", '%' . $wpdb->esc_like( $search_term ) . '%', '%' . $wpdb->esc_like( $search_term ) . '%' );
-		$query .= $search_query;
+		$search_query = $wpdb->prepare( ' AND (campaign_name LIKE %s OR description LIKE %s)', '%' . $wpdb->esc_like( $search_term ) . '%', '%' . $wpdb->esc_like( $search_term ) . '%' );
+		$query       .= $search_query;
 	}
 
 	$results = $wpdb->get_results( $wpdb->prepare( $query, $bindings ), ARRAY_A );
@@ -1131,9 +1131,12 @@ function woomorrintegration_get_campaign_user_offers( $wpdb, $table_name, $reque
 
 	// Add filters here as neede.
 	$filters = array(
-		'campaign_id'       => intval( $request->get_param( 'campaign_id' ) ),
-		'campaign_offer_id' => intval( $request->get_param( 'campaign_offer_id' ) ),
-		'user_id'           => intval( $request->get_param( 'user_id' ) ),
+		'campaign_id'          => intval( $request->get_param( 'campaign_id' ) ),
+		'campaign_offer_id'    => intval( $request->get_param( 'campaign_offer_id' ) ),
+		'user_id'              => intval( $request->get_param( 'user_id' ) ),
+		'business_number'      => sanitize_text_field( $request->get_param( 'business_number' ) ),
+		'business_name'        => sanitize_text_field( $request->get_param( 'business_name' ) ),
+		'campaign_name'        => sanitize_text_field( $request->get_param( 'campaign_name' ) ),
 	);
 
 	$query    = "SELECT * FROM $table_name WHERE 1=1";
