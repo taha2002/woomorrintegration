@@ -54,6 +54,16 @@ function woomorrintegration_campaign_api_init() {
 			'permission_callback' => 'woomorrintegration_campaign_permission_check',
 		)
 	);
+
+	register_rest_route(
+		'woomorrintegration/v1',
+		'/userlogs(?:/(?P<id>\d+))?',
+		array(
+			'methods'             => 'GET, POST, PUT, DELETE',
+			'callback'            => 'woomorrintegration_user_log_handler',
+			'permission_callback' => 'woomorrintegration_campaign_permission_check',
+		)
+	);
 }
 add_action( 'rest_api_init', 'woomorrintegration_campaign_api_init' );
 
@@ -135,7 +145,7 @@ function woomorrintegration_campaign_get_sanitized_data( WP_REST_Request $reques
 		'ref_appname'           => sanitize_text_field( $request->get_param( 'ref_appname' ) ),
 		'ref_datetime'          => sanitize_text_field( $request->get_param( 'ref_datetime' ) ),
 		'social_login_used'     => sanitize_text_field( $request->get_param( 'social_login_used' ) ),
-		'created_user'          => sanitize_text_field( $request->get_param( 'created_user' ) ),
+		'created_at_geo'        => sanitize_text_field( $request->get_param( 'created_user' ) ),
 		'created_userid'        => intval( $request->get_param( 'created_userid' ) ),
 		'created_datetime'      => sanitize_text_field( $request->get_param( 'created_datetime' ) ),
 		'app_name'              => sanitize_text_field( $request->get_param( 'app_name' ) ),
@@ -1131,12 +1141,12 @@ function woomorrintegration_get_campaign_user_offers( $wpdb, $table_name, $reque
 
 	// Add filters here as neede.
 	$filters = array(
-		'campaign_id'          => intval( $request->get_param( 'campaign_id' ) ),
-		'campaign_offer_id'    => intval( $request->get_param( 'campaign_offer_id' ) ),
-		'user_id'              => intval( $request->get_param( 'user_id' ) ),
-		'business_number'      => sanitize_text_field( $request->get_param( 'business_number' ) ),
-		'business_name'        => sanitize_text_field( $request->get_param( 'business_name' ) ),
-		'campaign_name'        => sanitize_text_field( $request->get_param( 'campaign_name' ) ),
+		'campaign_id'       => intval( $request->get_param( 'campaign_id' ) ),
+		'campaign_offer_id' => intval( $request->get_param( 'campaign_offer_id' ) ),
+		'user_id'           => intval( $request->get_param( 'user_id' ) ),
+		'business_number'   => sanitize_text_field( $request->get_param( 'business_number' ) ),
+		'business_name'     => sanitize_text_field( $request->get_param( 'business_name' ) ),
+		'campaign_name'     => sanitize_text_field( $request->get_param( 'campaign_name' ) ),
 	);
 
 	$query    = "SELECT * FROM $table_name WHERE 1=1";
@@ -1248,4 +1258,293 @@ function woomorrintegration_delete_campaign_user_offer( $wpdb, $table_name, $req
 		),
 		200
 	);
+}
+
+// ===================================================================
+// User Log API Functions
+// ===================================================================
+
+/**
+ *  Main handler for user log API requests.
+ *
+ * @param WP_REST_Request $request The REST API request.
+ * @return WP_REST_Response The response.
+ */
+function woomorrintegration_user_log_handler( WP_REST_Request $request ) {
+	global $wpdb;
+	$table_name = $wpdb->prefix . 'user_log';
+	switch ( $request->get_method() ) {
+		case 'POST':
+			return woomorrintegration_create_user_log( $wpdb, $table_name, $request );
+		case 'GET':
+			return woomorrintegration_get_user_logs( $wpdb, $table_name, $request );
+		case 'PUT':
+			return woomorrintegration_update_user_log( $wpdb, $table_name, $request );
+		case 'DELETE':
+			return woomorrintegration_delete_user_log( $wpdb, $table_name, $request );
+		default:
+			return new WP_REST_Response( array( 'message' => 'Invalid request method' ), 405 );
+	}
+}
+
+/**
+ * Sanitize and retrieve data from the request for user logs.
+ *
+ * @param WP_REST_Request $request The REST API request.
+ * @return array The sanitized data.
+ */
+function woomorrintegration_user_log_get_sanitized_data( WP_REST_Request $request ) {
+	return array(
+		'user_log_id'          => intval( $request->get_param( 'user_log_id' ) ),
+		'status'               => sanitize_text_field( $request->get_param( 'status' ) ),
+		'description'          => sanitize_textarea_field( $request->get_param( 'description' ) ),
+		'icon'                 => sanitize_text_field( $request->get_param( 'icon' ) ),
+		'user_id'              => intval( $request->get_param( 'user_id' ) ),
+		'user_name'            => sanitize_text_field( $request->get_param( 'user_name' ) ),
+		'user_email'           => sanitize_email( $request->get_param( 'user_email' ) ),
+		'full_name'            => sanitize_text_field( $request->get_param( 'full_name' ) ),
+		'user_mobile'          => sanitize_text_field( $request->get_param( 'user_mobile' ) ),
+		'telemetry_log_id'     => intval( $request->get_param( 'telemetry_log_id' ) ),
+		'session_id'           => sanitize_text_field( $request->get_param( 'session_id' ) ),
+		'session_meta'         => sanitize_textarea_field( $request->get_param( 'session_meta' ) ),
+		'event_type'           => sanitize_text_field( $request->get_param( 'event_type' ) ),
+		'event_details'        => sanitize_textarea_field( $request->get_param( 'event_details' ) ),
+		'user_agent'           => sanitize_text_field( $request->get_param( 'user_agent' ) ),
+		'event_meta'           => sanitize_textarea_field( $request->get_param( 'event_meta' ) ),
+		'geo_meta'             => sanitize_textarea_field( $request->get_param( 'geo_meta' ) ),
+		'social_meta'          => sanitize_textarea_field( $request->get_param( 'social_meta' ) ),
+		'share_meta'           => sanitize_textarea_field( $request->get_param( 'share_meta' ) ),
+		'chat_meta'            => sanitize_textarea_field( $request->get_param( 'chat_meta' ) ),
+		'document_meta'        => sanitize_textarea_field( $request->get_param( 'document_meta' ) ),
+		'user_ip_address'      => sanitize_text_field( $request->get_param( 'user_ip_address' ) ),
+		'alert_message'        => sanitize_text_field( $request->get_param( 'alert_message' ) ),
+		'risk_message'         => sanitize_text_field( $request->get_param( 'risk_message' ) ),
+		'risk_message_meta'    => sanitize_textarea_field( $request->get_param( 'risk_message_meta' ) ),
+		'message_to_user'      => sanitize_text_field( $request->get_param( 'message_to_user' ) ),
+		'message_to_group'     => sanitize_text_field( $request->get_param( 'message_to_group' ) ),
+		'for_business_name'    => sanitize_text_field( $request->get_param( 'for_business_name' ) ),
+		'for_business_number'  => sanitize_text_field( $request->get_param( 'for_business_number' ) ),
+		'zip_code'             => sanitize_text_field( $request->get_param( 'zip_code' ) ),
+		'browser'              => sanitize_text_field( $request->get_param( 'browser' ) ),
+		'device'               => sanitize_text_field( $request->get_param( 'device' ) ),
+		'role'                 => sanitize_text_field( $request->get_param( 'role' ) ),
+		'city'                 => sanitize_text_field( $request->get_param( 'city' ) ),
+		'state'                => sanitize_text_field( $request->get_param( 'state' ) ),
+		'country'              => sanitize_text_field( $request->get_param( 'country' ) ),
+		'geo_codes'            => sanitize_text_field( $request->get_param( 'geo_codes' ) ),
+		'geo_location'         => sanitize_text_field( $request->get_param( 'geo_location' ) ),
+		'http_method'          => sanitize_text_field( $request->get_param( 'http_method' ) ),
+		'http_url'             => esc_url_raw( $request->get_param( 'http_url' ) ),
+		'request_headers'      => sanitize_textarea_field( $request->get_param( 'request_headers' ) ),
+		'request_payload'      => sanitize_textarea_field( $request->get_param( 'request_payload' ) ),
+		'operating_system'     => sanitize_text_field( $request->get_param( 'operating_system' ) ),
+		'response_status_code' => intval( $request->get_param( 'response_status_code' ) ),
+		'response_time_ms'     => floatval( $request->get_param( 'response_time_ms' ) ),
+		'response_headers'     => sanitize_textarea_field( $request->get_param( 'response_headers' ) ),
+		'response_payload'     => sanitize_textarea_field( $request->get_param( 'response_payload' ) ),
+		'response_status'      => sanitize_text_field( $request->get_param( 'response_status' ) ),
+		'response_duration'    => floatval( $request->get_param( 'response_duration' ) ),
+		'response_error'       => sanitize_text_field( $request->get_param( 'response_error' ) ),
+		'error_message'        => sanitize_text_field( $request->get_param( 'error_message' ) ),
+		'error_alert_meta'     => sanitize_textarea_field( $request->get_param( 'error_alert_meta' ) ),
+		'exception_stacktrace' => sanitize_textarea_field( $request->get_param( 'exception_stacktrace' ) ),
+		'host_header'          => sanitize_text_field( $request->get_param( 'host_header' ) ),
+		'request_to_ip'        => sanitize_text_field( $request->get_param( 'request_to_ip' ) ),
+		'custom_one'           => sanitize_text_field( $request->get_param( 'custom_one' ) ),
+		'custom_two'           => sanitize_text_field( $request->get_param( 'custom_two' ) ),
+		'custom_three'         => sanitize_text_field( $request->get_param( 'custom_three' ) ),
+		'currency'             => sanitize_text_field( $request->get_param( 'currency' ) ),
+		'financial_year'       => sanitize_text_field( $request->get_param( 'financial_year' ) ),
+		'financial_period'     => sanitize_text_field( $request->get_param( 'financial_period' ) ),
+		'meta_fields'          => sanitize_textarea_field( $request->get_param( 'meta_fields' ) ),
+		'remarks'              => sanitize_textarea_field( $request->get_param( 'remarks' ) ),
+		'store_meta'           => sanitize_textarea_field( $request->get_param( 'store_meta' ) ),
+		'workflow_meta'        => sanitize_textarea_field( $request->get_param( 'workflow_meta' ) ),
+		'share_url'            => esc_url_raw( $request->get_param( 'share_url' ) ),
+		'share_status'         => sanitize_text_field( $request->get_param( 'share_status' ) ),
+		'business_name'        => sanitize_text_field( $request->get_param( 'business_name' ) ),
+		'business_number'      => sanitize_text_field( $request->get_param( 'business_number' ) ),
+		'ref_business'         => sanitize_text_field( $request->get_param( 'ref_business' ) ),
+		'ref_business_number'  => sanitize_text_field( $request->get_param( 'ref_business_number' ) ),
+		'ref_user'             => sanitize_text_field( $request->get_param( 'ref_user' ) ),
+		'ref_appname'          => sanitize_text_field( $request->get_param( 'ref_appname' ) ),
+		'ref_datetime'         => sanitize_text_field( $request->get_param( 'ref_datetime' ) ),
+		'social_login_used'    => sanitize_text_field( $request->get_param( 'social_login_used' ) ),
+		'created_user'         => sanitize_text_field( $request->get_param( 'created_user' ) ),
+		'created_userid'       => sanitize_text_field( $request->get_param( 'created_userid' ) ),
+		'created_datetime'     => sanitize_text_field( $request->get_param( 'created_datetime' ) ),
+		'created_at_geo'       => sanitize_text_field( $request->get_param( 'created_at_geo' ) ),
+		'app_name'             => sanitize_text_field( $request->get_param( 'app_name' ) ),
+	);
+}
+
+/**
+ * Retrieve a user log by ID.
+ *
+ * @param WP_REST_Request $request The REST API request.
+ * @return WP_REST_Response The response.
+ */
+function woomorrintegration_get_user_log_by_id( WP_REST_Request $request ) {
+	global $wpdb;
+	$table_name  = $wpdb->prefix . 'user_log';
+	$user_log_id = isset( $request['id'] ) ? intval( $request['id'] ) : 0;
+
+	if ( empty( $user_log_id ) ) {
+		return new WP_REST_Response( array( 'message' => 'User Log ID is required' ), 400 );
+	}
+
+	$user_log = $wpdb->get_row(
+		$wpdb->prepare( "SELECT * FROM $table_name WHERE user_log_id = %d", $user_log_id ),
+		ARRAY_A
+	);
+
+	if ( null === $user_log ) {
+		return new WP_REST_Response( array( 'message' => 'User Log not found' ), 404 );
+	}
+
+	return new WP_REST_Response( $user_log, 200 );
+}
+
+/**
+ * Retrieve all user logs with optional filters.
+ *
+ * @param wpdb            $wpdb The WordPress database object.
+ * @param string          $table_name The table name.
+ * @param WP_REST_Request $request The REST API request.
+ * @return WP_REST_Response The response.
+ */
+function woomorrintegration_get_user_logs( $wpdb, $table_name, WP_REST_Request $request ) {
+	$user_log_id = isset( $request['id'] ) ? intval( $request['id'] ) : 0;
+	if ( ! empty( $user_log_id ) ) {
+		return woomorrintegration_get_user_log_by_id( $request );
+	}
+
+	$filters = array(
+		'user_id'          => intval( $request->get_param( 'user_id' ) ),
+		'user_name'        => sanitize_text_field( $request->get_param( 'user_name' ) ),
+		'telemetry_log_id' => sanitize_text_field( $request->get_param( 'telemetry_log_id' ) ),
+		'created_after'    => sanitize_text_field( $request->get_param( 'created_after' ) ),
+		'created_before'   => sanitize_text_field( $request->get_param( 'created_before' ) ),
+		'business_name'    => sanitize_text_field( $request->get_param( 'business_name' ) ),
+		'business_number'  => sanitize_text_field( $request->get_param( 'business_number' ) ),
+	);
+
+	$query    = "SELECT * FROM $table_name WHERE 1=1";
+	$bindings = array();
+
+	foreach ( $filters as $key => $value ) {
+		if ( ! empty( $value ) ) {
+			if ( $key === 'created_after' ) {
+				$query .= ' AND created_datetime >= %s';
+			} elseif ( $key === 'created_before' ) {
+				$query .= ' AND created_datetime <= %s';
+			} else {
+				$query .= $wpdb->prepare( " AND $key = %s", $value );
+			}
+			$bindings[] = $value;
+		}
+	}
+
+	$results = $wpdb->get_results( $wpdb->prepare( $query, $bindings ), ARRAY_A );
+
+	if ( null === $results ) {
+		return new WP_REST_Response( array( 'message' => 'Error retrieving user logs' ), 500 );
+	}
+
+	return new WP_REST_Response( $results, 200 );
+}
+
+/**
+ *  Create a new user log entry.
+ *
+ * @param wpdb            $wpdb The WordPress database object.
+ * @param string          $table_name The table name.
+ * @param WP_REST_Request $request The REST API request.
+ * @return WP_REST_Response The response.
+ */
+function woomorrintegration_create_user_log( $wpdb, $table_name, WP_REST_Request $request ) {
+	$sanitized_data = woomorrintegration_user_log_get_sanitized_data( $request );
+	$inserted       = $wpdb->insert( $table_name, $sanitized_data );
+	$inserted_id    = $wpdb->insert_id;
+	if ( false === $inserted ) {
+		return new WP_REST_Response( array( 'message' => 'Failed to create user log' ), 500 );
+	}
+
+	$sanitized_data['user_log_id'] = $inserted_id;
+
+	return new WP_REST_Response(
+		$sanitized_data,
+		201
+	);
+}
+
+/**
+ * Update an existing user log.
+ *
+ * @param wpdb            $wpdb The WordPress database object.
+ * @param string          $table_name The table name.
+ * @param WP_REST_Request $request The REST API request.
+ * @return WP_REST_Response The response.
+ */
+function woomorrintegration_update_user_log( $wpdb, $table_name, WP_REST_Request $request ) {
+	$user_log_id = isset( $request['id'] ) ? intval( $request['id'] ) : 0;
+
+	if ( empty( $user_log_id ) ) {
+		return new WP_REST_Response( array( 'message' => 'User Log ID is required' ), 400 );
+	}
+
+	$data    = woomorrintegration_user_log_get_sanitized_data( $request );
+	$updated = $wpdb->update( $table_name, $data, array( 'user_log_id' => $user_log_id ) );
+
+	if ( false === $updated ) {
+		error_log( 'Failed to update user log: ' . $wpdb->last_error );
+		return new WP_REST_Response(
+			array(
+				'message' => 'Failed to update user log',
+				'error'   => $wpdb->last_error,
+			),
+			500
+		);
+	}
+
+	$user_log = $wpdb->get_row(
+		$wpdb->prepare(
+			"SELECT * FROM $table_name WHERE user_log_id = %d",
+			$user_log_id
+		),
+		ARRAY_A
+	);
+
+	return new WP_REST_Response( $user_log, 200 );
+}
+
+/**
+ * Delete a user log by ID.
+ *
+ * @param WP_REST_Request $request The REST API request.
+ * @return WP_REST_Response The response.
+ */
+function woomorrintegration_delete_user_log( WP_REST_Request $request ) {
+	global $wpdb;
+	$table_name  = $wpdb->prefix . 'user_log';
+	$user_log_id = isset( $request['id'] ) ? intval( $request['id'] ) : 0;
+
+	if ( empty( $user_log_id ) ) {
+		return new WP_REST_Response( array( 'message' => 'User Log ID is required' ), 400 );
+	}
+
+	$deleted = $wpdb->delete( $table_name, array( 'user_log_id' => $user_log_id ) );
+
+	if ( false === $deleted ) {
+		error_log( 'Failed to delete user log: ' . $wpdb->last_error );
+		return new WP_REST_Response(
+			array(
+				'message' => 'Failed to delete user log',
+				'error'   => $wpdb->last_error,
+			),
+			500
+		);
+	}
+
+	return new WP_REST_Response( array( 'message' => 'User Log deleted successfully' ), 200 );
 }

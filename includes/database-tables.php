@@ -373,6 +373,91 @@ function woomorrintegration_create_tables() {
         PRIMARY KEY (campaign_user_offer_id)
     ) $charset_collate;";
 
+	$table_name_user_log = $wpdb->prefix . 'user_log';
+	$sql_user_log        = "CREATE TABLE $table_name_user_log (
+        user_log_id BIGINT NOT NULL AUTO_INCREMENT,
+        status TEXT NULL,
+        description TEXT NULL,
+        icon TEXT NULL,
+        user_id BIGINT NULL,
+        user_name TEXT NULL,
+        user_email TEXT NULL,
+        full_name TEXT NULL,
+        user_mobile TEXT NULL,
+        telemetry_log_id BIGINT NULL,
+        session_id TEXT NULL,
+        session_meta TEXT NULL,
+        event_type TEXT NULL,
+        event_details TEXT NULL,
+        user_agent TEXT NULL,
+        event_meta TEXT NULL,
+        geo_meta TEXT NULL,
+        social_meta TEXT NULL,
+        share_meta TEXT NULL,
+        chat_meta TEXT NULL,
+        document_meta TEXT NULL,
+        user_ip_address TEXT NULL,
+        alert_message TEXT NULL,
+        risk_message TEXT NULL,
+        risk_message_meta TEXT NULL,
+        message_to_user TEXT NULL,
+        message_to_group TEXT NULL,
+        for_business_name TEXT NULL,
+        for_business_number TEXT NULL,
+        zip_code TEXT NULL,
+        browser TEXT NULL,
+        device TEXT NULL,
+        role TEXT NULL,
+        city TEXT NULL,
+        state TEXT NULL,
+        country TEXT NULL,
+        geo_codes TEXT NULL,
+        geo_location TEXT NULL,
+        http_method TEXT NULL,
+        http_url TEXT NULL,
+        request_headers TEXT NULL,
+        request_payload TEXT NULL,
+        operating_system TEXT NULL,
+        response_status_code INT NULL,
+        response_time_ms BIGINT NULL,
+        response_headers TEXT NULL,
+        response_payload TEXT NULL,
+        response_status TEXT NULL,
+        response_duration BIGINT NULL,
+        response_error TEXT NULL,
+        error_message TEXT NULL,
+        error_alert_meta TEXT NULL,
+        exception_stacktrace TEXT NULL,
+        host_header TEXT NULL,
+        request_to_ip TEXT NULL,
+        custom_one TEXT NULL,
+        custom_two TEXT NULL,
+        custom_three TEXT NULL,
+        currency TEXT NULL,
+        financial_year TEXT NULL,
+        financial_period TEXT NULL,
+        meta_fields TEXT NULL,
+        remarks TEXT NULL,
+        store_meta TEXT NULL,
+        workflow_meta TEXT NULL,
+        share_url TEXT NULL,
+        share_status TEXT NULL,
+        business_name TEXT NULL,
+        business_number TEXT NULL,
+        ref_business TEXT NULL,
+        ref_business_number TEXT NULL,
+        ref_user TEXT NULL,
+        ref_appname TEXT NULL,
+        ref_datetime TIMESTAMP NULL DEFAULT NULL,
+        social_login_used TEXT NULL,
+        created_user TEXT NULL,
+        created_userid BIGINT NULL,
+        created_datetime TIMESTAMP NULL DEFAULT NULL,
+        created_at_geo TEXT NULL,
+        app_name TEXT NULL,
+        PRIMARY KEY (user_log_id)
+    ) $charset_collate;";
+
 	// Include WordPress upgrade functions.
 	require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
@@ -384,6 +469,7 @@ function woomorrintegration_create_tables() {
 	dbDelta( $sql_campaign_offer );
 	dbDelta( $sql_campaign_tracking );
 	dbDelta( $sql_campaign_user_offer );
+	dbDelta( $sql_user_log );
 
 	// Update the database version option.
 	add_option( 'woomorrintegration_db_version', $table_version );
