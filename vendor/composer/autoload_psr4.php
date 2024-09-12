@@ -7,5 +7,7 @@ $baseDir = dirname($vendorDir);
 
 return array(
     'Woomorrintegration\\' => array($baseDir . '/src'),
+    'WhichBrowser\\' => array($vendorDir . '/whichbrowser/parser/src'),
     'Spipu\\Html2Pdf\\' => array($vendorDir . '/spipu/html2pdf/src'),
+    'Psr\\Cache\\' => array($vendorDir . '/psr/cache/src'),
 );

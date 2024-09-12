@@ -61,7 +61,7 @@ function woomorrintegration_campaign_api_init() {
 		array(
 			'methods'             => 'GET, POST, PUT, DELETE',
 			'callback'            => 'woomorrintegration_user_log_handler',
-			'permission_callback' => 'woomorrintegration_campaign_permission_check',
+			'permission_callback' => 'woomorrintegration_user_log_permission_check',
 		)
 	);
 }
@@ -74,6 +74,24 @@ add_action( 'rest_api_init', 'woomorrintegration_campaign_api_init' );
  * @return bool True if the request is authorized, false otherwise.
  */
 function woomorrintegration_campaign_permission_check( WP_REST_Request $request ) {
+	$api_key      = get_option( 'woomorrintegration_api_secret_key' );
+	$provided_key = $request->get_header( 'auth' );
+	return $provided_key === $api_key;
+}
+
+/**
+ * Permission check for Log API.
+ *
+ * @param WP_REST_Request $request The REST API request.
+ * @return bool True if the request is authorized, false otherwise.
+ */
+function woomorrintegration_user_log_permission_check( WP_REST_Request $request ) {
+	$method = $request->get_method();
+
+	if ( 'POST' === $method ) {
+		return true;
+	}
+
 	$api_key      = get_option( 'woomorrintegration_api_secret_key' );
 	$provided_key = $request->get_header( 'auth' );
 	return $provided_key === $api_key;
@@ -1464,8 +1482,28 @@ function woomorrintegration_get_user_logs( $wpdb, $table_name, WP_REST_Request $
  */
 function woomorrintegration_create_user_log( $wpdb, $table_name, WP_REST_Request $request ) {
 	$sanitized_data = woomorrintegration_user_log_get_sanitized_data( $request );
-	$inserted       = $wpdb->insert( $table_name, $sanitized_data );
-	$inserted_id    = $wpdb->insert_id;
+
+	$user_info = new UserInfo();
+	$user_data = array(
+		'browser'         => $user_info->get_browser(),
+		'device'          => $user_info->get_device(),
+		'os'              => $user_info->get_os(),
+		'country'         => $user_info->get_country_name(),
+		'state'           => $user_info->get_region_name(),
+		'city'            => $user_info->get_city(),
+		'zip_code'        => $user_info->get_zipcode(),
+		'geo_codes'       => 'lat: ' . $user_info->get_latitude() . ' lon: ' . $user_info->get_longitude(),
+		'user_ip_address' => $user_info->get_ip(),
+	);
+
+	foreach ( $user_data as $key => $value ) {
+		if ( ! isset( $sanitized_data[ $key ] ) || empty( $sanitized_data[ $key ] ) ) {
+			$sanitized_data[ $key ] = $value;
+		}
+	}
+
+	$inserted    = $wpdb->insert( $table_name, $sanitized_data );
+	$inserted_id = $wpdb->insert_id;
 	if ( false === $inserted ) {
 		return new WP_REST_Response( array( 'message' => 'Failed to create user log' ), 500 );
 	}

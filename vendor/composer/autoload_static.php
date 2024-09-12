@@ -10,10 +10,15 @@ class ComposerStaticInitcb066e6500a53f209e240971ab845cf2
         'W' => 
         array (
             'Woomorrintegration\\' => 19,
+            'WhichBrowser\\' => 13,
         ),
         'S' => 
         array (
             'Spipu\\Html2Pdf\\' => 15,
+        ),
+        'P' => 
+        array (
+            'Psr\\Cache\\' => 10,
         ),
     );
 
@@ -22,9 +27,17 @@ class ComposerStaticInitcb066e6500a53f209e240971ab845cf2
         array (
             0 => __DIR__ . '/../..' . '/src',
         ),
+        'WhichBrowser\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/whichbrowser/parser/src',
+        ),
         'Spipu\\Html2Pdf\\' => 
         array (
             0 => __DIR__ . '/..' . '/spipu/html2pdf/src',
+        ),
+        'Psr\\Cache\\' => 
+        array (
+            0 => __DIR__ . '/..' . '/psr/cache/src',
         ),
     );
 

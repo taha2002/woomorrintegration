@@ -98,6 +98,7 @@ require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/extra-apis.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'app/updater.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/database-tables.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/webhooks.php';
+require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/user-req-info.php';
 
 /**
  * Activation hook callback function.
