@@ -1485,15 +1485,15 @@ function woomorrintegration_create_user_log( $wpdb, $table_name, WP_REST_Request
 
 	$user_info = new UserInfo();
 	$user_data = array(
-		'browser'         => $user_info->get_browser(),
-		'device'          => $user_info->get_device(),
-		'os'              => $user_info->get_os(),
-		'country'         => $user_info->get_country_name(),
-		'state'           => $user_info->get_region_name(),
-		'city'            => $user_info->get_city(),
-		'zip_code'        => $user_info->get_zipcode(),
-		'geo_codes'       => 'lat: ' . $user_info->get_latitude() . ' lon: ' . $user_info->get_longitude(),
-		'user_ip_address' => $user_info->get_ip(),
+		'browser'          => $user_info->get_browser(),
+		'device'           => $user_info->get_device(),
+		'operating_system' => $user_info->get_os(),
+		'country'          => $user_info->get_country_name(),
+		'state'            => $user_info->get_region_name(),
+		'city'             => $user_info->get_city(),
+		'zip_code'         => $user_info->get_zipcode(),
+		'geo_codes'        => 'lat: ' . $user_info->get_latitude() . ' lon: ' . $user_info->get_longitude(),
+		'user_ip_address'  => $user_info->get_ip(),
 	);
 
 	foreach ( $user_data as $key => $value ) {
@@ -1501,6 +1501,9 @@ function woomorrintegration_create_user_log( $wpdb, $table_name, WP_REST_Request
 			$sanitized_data[ $key ] = $value;
 		}
 	}
+
+	// var_dump( $sanitized_data );
+	// wp_die("fd");
 
 	$inserted    = $wpdb->insert( $table_name, $sanitized_data );
 	$inserted_id = $wpdb->insert_id;
@@ -1559,11 +1562,12 @@ function woomorrintegration_update_user_log( $wpdb, $table_name, WP_REST_Request
 /**
  * Delete a user log by ID.
  *
+ * @param wpdb            $wpdb The WordPress database object.
+ * @param string          $table_name The table name.
  * @param WP_REST_Request $request The REST API request.
  * @return WP_REST_Response The response.
  */
-function woomorrintegration_delete_user_log( WP_REST_Request $request ) {
-	global $wpdb;
+function woomorrintegration_delete_user_log( $wpdb, $table_name, WP_REST_Request $request ) {
 	$table_name  = $wpdb->prefix . 'user_log';
 	$user_log_id = isset( $request['id'] ) ? intval( $request['id'] ) : 0;
 
