@@ -17,7 +17,7 @@ function handle_preflight() {
 	// header( 'Access-Control-Allow-Origin: ' . $origin_url );
 	header( 'Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE' );
 	header( 'Access-Control-Allow-Credentials: true' );
-	header( 'Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, x_ffintegration_api_key, Authorization' );
+	header( 'Access-Control-Allow-Headers: Origin, X-Requested-With, Content-Type, Accept, x_ffintegration_api_key, Authorization, auth' );
 
 	if ( 'OPTIONS' == $_SERVER['REQUEST_METHOD'] ) {
 		status_header( 200 );

@@ -17,7 +17,7 @@ function woomorrintegration_create_tables() {
 	global $wpdb;
 
 	$charset_collate = $wpdb->get_charset_collate();
-	$table_version   = '1.1';
+	$table_version   = '1.7';
 
 	// Check if the table version is installed.
 	$installed_db_ver = get_option( 'woomorrintegration_db_version' );
@@ -458,6 +458,70 @@ function woomorrintegration_create_tables() {
         PRIMARY KEY (user_log_id)
     ) $charset_collate;";
 
+    $table_name_quotes = $wpdb->prefix . 'store_quotes';
+	$sql_quotes        = "CREATE TABLE $table_name_quotes (
+        quote_id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+        quote_code VARCHAR(30) NOT NULL,
+
+        -- External keys (e.g., phone numbers)
+        customer_key VARCHAR(50) NOT NULL,
+        supplier_key VARCHAR(50) NOT NULL,
+
+        -- IDs for internal WordPress linking (can be NULL if user doesn't exist in WP)
+        customer_id BIGINT(20) UNSIGNED DEFAULT NULL,
+        supplier_id BIGINT(20) UNSIGNED DEFAULT NULL,
+
+        for_business_number VARCHAR(50) DEFAULT NULL,
+        for_business_name VARCHAR(255) DEFAULT NULL,
+        quote_status VARCHAR(20) NOT NULL DEFAULT 'draft',
+        -- Quote financials (using DECIMAL for precision, same as WooCommerce)
+        subtotal DECIMAL(19, 4) NOT NULL DEFAULT 0.0000,
+        tax_total DECIMAL(19, 4) NOT NULL DEFAULT 0.0000,
+        grand_total DECIMAL(19, 4) NOT NULL DEFAULT 0.0000,
+        -- Link to the final WooCommerce order after acceptance
+        wc_order_id BIGINT(20) UNSIGNED DEFAULT NULL,
+        -- Metadata and notes
+        note TEXT NULL,
+        remarks TEXT NULL,
+        terms_of_supply LONGTEXT NULL,
+        -- Timestamps and user tracking
+        created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+        expires_at TIMESTAMP NULL DEFAULT NULL,
+        created_by BIGINT(20) UNSIGNED DEFAULT NULL,
+
+        PRIMARY KEY (quote_id),
+        UNIQUE KEY quote_code (quote_code),
+        KEY customer_id (customer_id),
+        KEY supplier_id (supplier_id),
+        KEY customer_key (customer_key),
+        KEY supplier_key (supplier_key),
+        KEY quote_status (quote_status),
+        KEY for_business_number (for_business_number)
+    ) $charset_collate;";
+
+	$table_name_quote_products = $wpdb->prefix . 'store_quote_products';
+	$sql_quote_products        = "CREATE TABLE $table_name_quote_products (
+        quote_product_id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
+        store_quote_id BIGINT(20) UNSIGNED NOT NULL,
+        product_id BIGINT(20) UNSIGNED NOT NULL,
+        product_name TEXT NOT NULL,        
+        -- Line item financials (using DECIMAL for precision)
+        quantity DECIMAL(10, 2) NOT NULL DEFAULT 1.00,
+        unit_price DECIMAL(19, 4) NOT NULL DEFAULT 0.0000,
+        line_subtotal DECIMAL(19, 4) NOT NULL DEFAULT 0.0000,
+        line_tax DECIMAL(19, 4) NOT NULL DEFAULT 0.0000,
+        line_total DECIMAL(19, 4) NOT NULL DEFAULT 0.0000,
+        -- Line item notes
+        product_note TEXT NULL,
+        product_remarks TEXT NULL,
+        product_supply_remarks TEXT NULL,
+
+        PRIMARY KEY (quote_product_id),
+        KEY store_quote_id (store_quote_id),
+        KEY product_id (product_id)
+    ) $charset_collate;";
+
 	// Include WordPress upgrade functions.
 	require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
@@ -470,6 +534,8 @@ function woomorrintegration_create_tables() {
 	dbDelta( $sql_campaign_tracking );
 	dbDelta( $sql_campaign_user_offer );
 	dbDelta( $sql_user_log );
+    dbDelta( $sql_quotes );
+    dbDelta( $sql_quote_products );
 
 	// Update the database version option.
 	add_option( 'woomorrintegration_db_version', $table_version );

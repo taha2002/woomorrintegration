@@ -84,6 +84,8 @@ function woomorrintegration_template_redirect() {
 }
 
 // Include necessary files.
+require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/enable-api-cors.php';
+require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/woomorr-query.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/functions.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'admin/admin-page.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/user-management-api.php';
@@ -99,6 +101,7 @@ require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'app/updater.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/database-tables.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/webhooks.php';
 require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/user-req-info.php';
+require_once WOOMORRINTEGRATION_PLUGIN_DIR . 'includes/api-quotes.php';
 
 /**
  * Activation hook callback function.

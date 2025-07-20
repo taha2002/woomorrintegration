@@ -225,15 +225,42 @@ function woomorrintegration_get_inventory_vouchers( $wpdb, $table_name, $request
 		'business_name'        => sanitize_text_field( $request->get_param( 'business_name' ) ),
 	);
 
-	$query    = "SELECT * FROM $table_name WHERE 1=1";
+	// Pagination params.
+	$page = max( 1, intval( $request->get_param( 'page' ) ) );
+	$per_page = max( 1, intval( $request->get_param( 'per_page' ) ) );
+	$offset = ( $page - 1 ) * $per_page;
+
+	// Search param.
+	$search = $request->get_param( 'search' );
+
+	$where_clauses = array( '1=1' );
 	$bindings = array();
 
 	foreach ( $filters as $key => $value ) {
 		if ( ! empty( $value ) ) {
-			$query     .= $wpdb->prepare( " AND $key = %s", $value );
+			$where_clauses[] = "$key = %s";
 			$bindings[] = $value;
 		}
 	}
+
+	if ( ! empty( $search ) ) {
+		$where_clauses[] = '(business_name LIKE %s OR business_number LIKE %s OR remarks LIKE %s)';
+		$search_val = '%' . $wpdb->esc_like( $search ) . '%';
+		$bindings[] = $search_val;
+		$bindings[] = $search_val;
+		$bindings[] = $search_val;
+	}
+
+	$where_sql = implode( ' AND ', $where_clauses );
+
+	$count_query = "SELECT COUNT(*) FROM $table_name WHERE $where_sql";
+	$query = "SELECT * FROM $table_name WHERE $where_sql ORDER BY inventory_voucher_id DESC LIMIT %d OFFSET %d";
+	$bindings_count = $bindings;
+	$bindings[] = $per_page;
+	$bindings[] = $offset;
+
+	// Get total count for pagination.
+	$total = $wpdb->get_var( $wpdb->prepare( $count_query, $bindings_count ) );
 
 	$results = $wpdb->get_results( $wpdb->prepare( $query, $bindings ), ARRAY_A );
 
@@ -248,10 +275,10 @@ function woomorrintegration_get_inventory_vouchers( $wpdb, $table_name, $request
 		);
 	}
 
-	return new WP_REST_Response(
-		$results,
-		200
-	);
+	$total_pages = $per_page > 0 ? ceil( $total / $per_page ) : 1;
+	$response = new WP_REST_Response( $results, 200 );
+	$response->header( 'X-WP-TotalPages', $total_pages );
+	return $response;
 }
 
 /**
@@ -479,27 +506,45 @@ function woomorrintegration_create_inventory_voucher_detail( $wpdb, $table_name,
  * @return WP_REST_Response The response.
  */
 function woomorrintegration_get_inventory_voucher_details( $wpdb, $table_name, WP_REST_Request $request ) {
-	$voucher_id = isset( $request['id'] ) ? intval( $request['id'] ) : 0;
+	$voucher_id   = isset( $request['id'] ) ? intval( $request['id'] ) : 0;
 
-	if ( ! empty( $voucher_id ) ) {
-		$details = $wpdb->get_results(
-			$wpdb->prepare(
-				"SELECT * FROM $table_name WHERE inventory_voucher_id = %d",
-				intval( $voucher_id )
-			),
-			ARRAY_A
-		);
-	} else {
-		$details = $wpdb->get_results(
-			"SELECT * FROM $table_name",
-			ARRAY_A
-		);
+	// Pagination params.
+	$page         = max( 1, intval( $request->get_param( 'page' ) ) );
+	$per_page     = max( 1, intval( $request->get_param( 'per_page' ) ) );
+	$offset       = ( $page - 1 ) * $per_page;
+
+	// Search param.
+	$search       = $request->get_param( 'search' );
+	$search_sql   = '';
+	$search_args  = array();
+	if ( ! empty( $search ) ) {
+		$search     = '%' . $wpdb->esc_like( $search ) . '%';
+		$search_sql = " AND (product_name LIKE %s OR sku LIKE %s OR serial_no LIKE %s)";
+		$search_args = array( $search, $search, $search );
 	}
 
-	return new WP_REST_Response(
-		$details,
-		200
-	);
+	$where_sql  = '';
+	$where_args = array();
+	if ( ! empty( $voucher_id ) ) {
+		$where_sql    = 'WHERE inventory_voucher_id = %d';
+		$where_args[] = $voucher_id;
+	} else {
+		$where_sql = 'WHERE 1=1';
+	}
+
+	// Count total for pagination.
+	$count_sql = "SELECT COUNT(*) FROM $table_name $where_sql" . ( $search_sql ? $search_sql : '' );
+	$total     = $wpdb->get_var( $wpdb->prepare( $count_sql, array_merge( $where_args, $search_args ) ) );
+
+	// Main query.
+	$query_sql  = "SELECT * FROM $table_name $where_sql" . ( $search_sql ? $search_sql : '' ) . " ORDER BY inventory_voucher_detail_id DESC LIMIT %d OFFSET %d";
+	$query_args = array_merge( $where_args, $search_args, array( $per_page, $offset ) );
+	$details    = $wpdb->get_results( $wpdb->prepare( $query_sql, $query_args ), ARRAY_A );
+
+	$total_pages = $per_page > 0 ? ceil( $total / $per_page ) : 1;
+	$response = new WP_REST_Response( $details, 200 );
+	$response->header( 'X-WP-TotalPages', $total_pages );
+	return $response;
 }
 
 /**
