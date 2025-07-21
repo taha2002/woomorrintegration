@@ -44,11 +44,11 @@ class Woomorr_Quotes_API_Controller {
 
 	public function __construct() {
 		global $wpdb;
-		$this->wpdb = $wpdb;
-        $this->table_quotes = $this->wpdb->prefix . 'store_quotes';
-        $this->table_quote_products = $this->wpdb->prefix . 'store_quote_products';
+		$this->wpdb                 = $wpdb;
+		$this->table_quotes         = $this->wpdb->prefix . 'store_quotes';
+		$this->table_quote_products = $this->wpdb->prefix . 'store_quote_products';
 
-		add_action( 'rest_api_init', [ $this, 'register_routes' ] );
+		add_action( 'rest_api_init', array( $this, 'register_routes' ) );
 	}
 
 	/**
@@ -134,6 +134,9 @@ class Woomorr_Quotes_API_Controller {
 		}
 		if ( ! empty( $params['supplier_key'] ) ) {
 			$query_builder->where( 'supplier_key', sanitize_text_field( $params['supplier_key'] ) );
+		}
+		if ( ! empty( $params['created_by'] ) ) {
+			$query_builder->where( 'created_by', sanitize_text_field( $params['created_by'] ) );
 		}
 
 		if ( ! empty( $params['business_number'] ) ) {
@@ -348,14 +351,16 @@ class Woomorr_Quotes_API_Controller {
 			return new WP_Error( 'rest_db_error', 'Failed to update quote.', array( 'status' => 500, 'db_error' => $this->wpdb->last_error ) );
 		}
 
-		// Replace line items (easiest and safest approach).
-		$this->wpdb->delete( $this->table_quote_products, array( 'store_quote_id' => $id ) );
-		foreach ( $line_items as $item ) {
-			$item_data = $this->prepare_line_item_for_db( $item, $id );
-			$item_inserted = $this->wpdb->insert( $this->table_quote_products, $item_data );
-			if ( ! $item_inserted ) {
-				$this->wpdb->query( 'ROLLBACK' );
-				return new WP_Error( 'rest_db_error', 'Failed to update quote line items.', array( 'status' => 500, 'db_error' => $this->wpdb->last_error ) );
+		if ( isset( $body['line_items'] ) ) {
+			// Replace line items (easiest and safest approach).
+			$this->wpdb->delete( $this->table_quote_products, array( 'store_quote_id' => $id ) );
+			foreach ( $line_items as $item ) {
+				$item_data = $this->prepare_line_item_for_db( $item, $id );
+				$item_inserted = $this->wpdb->insert( $this->table_quote_products, $item_data );
+				if ( ! $item_inserted ) {
+					$this->wpdb->query( 'ROLLBACK' );
+					return new WP_Error( 'rest_db_error', 'Failed to update quote line items.', array( 'status' => 500, 'db_error' => $this->wpdb->last_error ) );
+				}
 			}
 		}
 
