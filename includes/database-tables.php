@@ -17,7 +17,7 @@ function woomorrintegration_create_tables() {
 	global $wpdb;
 
 	$charset_collate = $wpdb->get_charset_collate();
-	$table_version   = '1.9';
+	$table_version   = '1.910';
 
 	// Check if the table version is installed.
 	$installed_db_ver = get_option( 'woomorrintegration_db_version' );
@@ -495,6 +495,8 @@ function woomorrintegration_create_tables() {
         updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
         expires_at TIMESTAMP NULL DEFAULT NULL,
         created_by BIGINT(20) UNSIGNED DEFAULT NULL,
+
+        status_history JSON DEFAULT NULL,
 
         PRIMARY KEY (quote_id),
         UNIQUE KEY quote_code (quote_code),

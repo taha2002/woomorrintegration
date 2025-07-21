@@ -167,6 +167,50 @@ class Woomorr_Quotes_API_Controller {
 
 		$results = $query_builder->get();
 
+		// ======================================================================
+		// Fetch line items for the retrieved quotes.
+		// ======================================================================
+
+		// Get an array of just the quote IDs from the first query's results.
+		$quote_ids = wp_list_pluck( $results['data'], 'quote_id' );
+
+		// Initialize line_items array for each quote and parse status_history.
+		foreach ( $results['data'] as $key => $quote ) {
+			$results['data'][ $key ]->line_items = array();
+
+			$history = json_decode( $results['data'][ $key ]->status_history, true );
+			if ( ! is_array( $history ) ) {
+				$history = array();
+			}
+			$results['data'][ $key ]->status_history = $history;
+		}
+
+		// Only run the second query if we actually have quotes.
+		if ( ! empty( $quote_ids ) ) {
+			// Prepare the IN clause for the SQL query.
+			$id_placeholders = implode( ', ', array_fill( 0, count( $quote_ids ), '%d' ) );
+
+			// Fetch all line items for all the quotes in a single query.
+			$line_items_query = $this->wpdb->prepare(
+				"SELECT * FROM {$this->table_quote_products} WHERE store_quote_id IN ( {$id_placeholders} )",
+				$quote_ids
+			);
+			$all_line_items = $this->wpdb->get_results( $line_items_query );
+
+			// Group the line items by their parent quote ID.
+			$line_items_by_quote_id = [];
+			foreach ( $all_line_items as $item ) {
+				$line_items_by_quote_id[ $item->store_quote_id ][] = $item;
+			}
+
+			// Map the grouped line items back to the main quote results.
+			foreach ( $results['data'] as $key => $quote ) {
+				if ( isset( $line_items_by_quote_id[ $quote->quote_id ] ) ) {
+					$results['data'][ $key ]->line_items = $line_items_by_quote_id[ $quote->quote_id ];
+				}
+			}
+		}
+
 		$response = new WP_REST_Response( $results['data'], 200 );
 		$response->header( 'X-WP-Total', $results['total'] );
 		$response->header( 'X-WP-TotalPages', $results['total_pages'] );
@@ -209,7 +253,21 @@ class Woomorr_Quotes_API_Controller {
 
 		// Generate a unique quote code.
 		$quote_data['quote_code'] = 'Q-' . time() . '-' . wp_rand( 100, 999 );
-        $quote_data['created_by'] = get_current_user_id(); // Or another source.
+		$quote_data['created_by'] = $body['created_by'] ? $body['created_by'] : get_current_user_id(); // Or another source.
+
+		$user_info       = get_userdata( $quote_data['created_by'] );
+		$initial_history = array(
+			array(
+				'quote_status'    => $quote_data['quote_status'] ?? 'draft',
+				'note'            => 'Quote created.',
+				'changed_by_id'   => $quote_data['created_by'],
+				'changed_by_name' => $user_info ? $user_info->display_name : 'System',
+				'created_at'      => gmdate( 'Y-m-d H:i:s' ),
+			),
+		);
+		// Encode the history array into a JSON string for the database.
+		$quote_data['status_history'] = wp_json_encode( $initial_history );
+
 
 		$this->wpdb->query( 'START TRANSACTION' );
 
@@ -254,6 +312,32 @@ class Woomorr_Quotes_API_Controller {
 		$body = $request->get_json_params();
 		$quote_data = $this->prepare_item_for_db( $body, $existing_quote );
 		$line_items = isset( $body['line_items'] ) && is_array( $body['line_items'] ) ? $body['line_items'] : array();
+
+		// --- NEW: Logic to append to the JSON history field ---.
+		// Decode existing history to start with.
+		$history =  $existing_quote['status_history'];
+		if ( ! is_array( $history ) ) {
+			$history = array();
+		}
+
+		$new_status = $quote_data['quote_status'] ?? $existing_quote['quote_status'];
+
+		// Check if the status has actually changed.
+		if ( $new_status !== $existing_quote['quote_status'] ) {
+			$user_id   = get_current_user_id();
+			$user_info = get_userdata( $user_id );
+
+			// Create and append the new history entry.
+			$history[] = array(
+				'quote_status'    => $new_status,
+				'note'            => $body['status_change_note'] ?? null,
+				'changed_by_id'   => $user_id,
+				'changed_by_name' => $user_info ? $user_info->display_name : 'System',
+				'created_at'      => gmdate( 'Y-m-d H:i:s' ),
+			);
+		}
+
+		$quote_data['status_history'] = wp_json_encode( $history );
 
 		$this->wpdb->query( 'START TRANSACTION' );
 
@@ -322,11 +406,19 @@ class Woomorr_Quotes_API_Controller {
 			ARRAY_A
 		);
 
-		if ( $quote && $include_line_items ) {
-			$quote['line_items'] = $this->wpdb->get_results(
-				$this->wpdb->prepare( "SELECT * FROM {$this->table_quote_products} WHERE store_quote_id = %d", $id ),
-				ARRAY_A
-			);
+		if ( $quote ) {
+			$quote['status_history'] = json_decode( $quote['status_history'], true );
+			// Ensure it's always an array in the response, even if null in the DB.
+			if ( ! is_array( $quote['status_history'] ) ) {
+				$quote['status_history'] = array();
+			}
+
+			if ( $include_line_items ) {
+				$quote['line_items'] = $this->wpdb->get_results(
+					$this->wpdb->prepare( "SELECT * FROM {$this->table_quote_products} WHERE store_quote_id = %d", $id ),
+					ARRAY_A
+				);
+			}
 		}
 		return $quote;
 	}
@@ -360,6 +452,7 @@ class Woomorr_Quotes_API_Controller {
 			'remarks'             => isset( $data['remarks'] ) ? sanitize_textarea_field( $data['remarks'] ) : $existing_data['remarks'] ?? null,
 			'terms_of_supply'     => isset( $data['terms_of_supply'] ) ? wp_kses_post( $data['terms_of_supply'] ) : $existing_data['terms_of_supply'] ?? null,
 			'expires_at'          => isset( $data['expires_at'] ) ? gmdate( 'Y-m-d H:i:s', strtotime( $data['expires_at'] ) ) : $existing_data['expires_at'] ?? null,
+			'created_by'          => isset( $data['created_by'] ) ? sanitize_text_field( $data['created_by'] ) : $existing_data['created_by'] ?? null,
 		);
 
 		// NEW: Automatically find and set internal WordPress user IDs.
