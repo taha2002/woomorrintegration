@@ -79,6 +79,37 @@ class Woomorr_Query {
         return $this;
     }
 
+    /**
+     * Adds a multi-column search clause (OR condition).
+     *
+     * @param array  $fields The array of field names to search in.
+     * @param string $term   The search term.
+     * @return $this
+     */
+    public function search(array $fields, $term) {
+        if (empty($fields) || empty($term)) {
+            return $this;
+        }
+        
+        $search_clauses = [];
+        $search_term = '%' . $this->wpdb->esc_like($term) . '%';
+
+        foreach ($fields as $field) {
+            // Important: Only search whitelisted fields
+            if ($this->is_allowed_field($field)) {
+                $search_clauses[] = "`{$field}` LIKE %s";
+                $this->params[] = $search_term;
+            }
+        }
+        
+        if (!empty($search_clauses)) {
+            // Group the OR conditions in parentheses
+            $this->where[] = '( ' . implode(' OR ', $search_clauses) . ' )';
+        }
+
+        return $this;
+    }
+
     public function where_date_range($field, $from, $to) {
         if (!$this->is_allowed_field($field)) {
             return $this;

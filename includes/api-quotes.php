@@ -34,12 +34,13 @@ class Woomorr_Quotes_API_Controller {
 	protected $table_quote_products;
 
 	/** @var array Whitelist of fields for the quotes table. */
-	protected $allowed_quote_fields = [
-		'quote_id', 'quote_code', 'customer_id', 'supplier_id',
+	protected $allowed_quote_fields = array(
+		'quote_id', 'quote_code','quote_ref_code', 'customer_id', 'supplier_id',
+		'from_user_id','from_user_mobile','to_user_id','to_user_mobile',
         'customer_key', 'supplier_key',
 		'for_business_number', 'for_business_name', 'quote_status',
 		'grand_total', 'wc_order_id', 'created_at', 'expires_at', 'created_by'
-	];
+	);
 
 	public function __construct() {
 		global $wpdb;
@@ -121,7 +122,7 @@ class Woomorr_Quotes_API_Controller {
 		// Use our brilliant Query Builder!
 		$query_builder = new Woomorr_Query( 'store_quotes', $this->allowed_quote_fields );
 
-		// Filtering
+		// Filtering.
 		if ( ! empty( $params['status'] ) ) {
 			$query_builder->where( 'quote_status', sanitize_text_field( $params['status'] ) );
 		}
@@ -139,23 +140,33 @@ class Woomorr_Quotes_API_Controller {
 			$query_builder->where( 'for_business_number', sanitize_text_field( $params['business_number'] ) );
 		}
 
-		// Search
+		// Search.
 		if ( ! empty( $params['search'] ) ) {
-			$query_builder->like( 'quote_code', $params['search'] );
+			// $query_builder->like( 'quote_code', $params['search'] );
+			$search_fields = array(
+				'quote_code',
+				'quote_ref_code',
+				'customer_key',
+				'supplier_key',
+				'for_business_name',
+				'note',
+				'remarks',
+			);
+			$query_builder->search( $search_fields, $params['search'] );
 		}
 
-		// Pagination
+		// Pagination.
 		$page     = ! empty( $params['page'] ) ? absint( $params['page'] ) : 1;
 		$per_page = ! empty( $params['per_page'] ) ? absint( $params['per_page'] ) : 10;
 		$query_builder->paginate( $page, $per_page );
 
-		// Ordering
+		// Ordering.
 		$orderby = ! empty( $params['orderby'] ) ? $params['orderby'] : 'created_at';
 		$order   = ! empty( $params['order'] ) ? $params['order'] : 'DESC';
 		$query_builder->order_by( $orderby, $order );
 
 		$results = $query_builder->get();
-		
+
 		$response = new WP_REST_Response( $results['data'], 200 );
 		$response->header( 'X-WP-Total', $results['total'] );
 		$response->header( 'X-WP-TotalPages', $results['total_pages'] );
@@ -172,11 +183,11 @@ class Woomorr_Quotes_API_Controller {
 	public function get_item( $request ) {
 		$id = (int) $request['id'];
 		$quote = $this->get_quote_by_id( $id );
-		
+
 		if ( ! $quote ) {
-			return new WP_Error( 'rest_not_found', 'Quote not found.', [ 'status' => 404 ] );
+			return new WP_Error( 'rest_not_found', 'Quote not found.', array( 'status' => 404 ) );
 		}
-		
+
 		return new WP_REST_Response( $quote, 200 );
 	}
 
@@ -188,18 +199,17 @@ class Woomorr_Quotes_API_Controller {
 	 */
 	public function create_item( $request ) {
 		$body = $request->get_json_params();
-		
+
 		$quote_data = $this->prepare_item_for_db( $body );
 		$line_items = isset( $body['line_items'] ) && is_array( $body['line_items'] ) ? $body['line_items'] : [];
 
 		if ( empty( $body['customer_key'] ) || empty( $body['supplier_key'] ) ) {
-			return new WP_Error( 'rest_missing_param', 'Missing required fields: customer_key, supplier_key.', [ 'status' => 400 ] );
+			// return new WP_Error( 'rest_missing_param', 'Missing required fields: customer_key, supplier_key.', [ 'status' => 400 ] );
 		}
 
-
-		// Generate a unique quote code
-		$quote_data['quote_code'] = 'Q-' . time() . '-' . wp_rand(100, 999);
-        $quote_data['created_by'] = get_current_user_id(); // Or another source
+		// Generate a unique quote code.
+		$quote_data['quote_code'] = 'Q-' . time() . '-' . wp_rand( 100, 999 );
+        $quote_data['created_by'] = get_current_user_id(); // Or another source.
 
 		$this->wpdb->query( 'START TRANSACTION' );
 
@@ -207,12 +217,12 @@ class Woomorr_Quotes_API_Controller {
 
 		if ( ! $inserted ) {
 			$this->wpdb->query( 'ROLLBACK' );
-			return new WP_Error( 'rest_db_error', 'Failed to create quote.', [ 'status' => 500, 'db_error' => $this->wpdb->last_error ] );
+			return new WP_Error( 'rest_db_error', 'Failed to create quote.', array( 'status' => 500, 'db_error' => $this->wpdb->last_error ) );
 		}
 
 		$quote_id = $this->wpdb->insert_id;
 
-		// Insert line items
+		// Insert line items.
 		foreach ( $line_items as $item ) {
 			$item_data = $this->prepare_line_item_for_db( $item, $quote_id );
 			$item_inserted = $this->wpdb->insert( $this->table_quote_products, $item_data );
@@ -223,7 +233,7 @@ class Woomorr_Quotes_API_Controller {
 		}
 
 		$this->wpdb->query( 'COMMIT' );
-		
+
 		$new_quote = $this->get_quote_by_id( $quote_id );
 		return new WP_REST_Response( $new_quote, 201 ); // 201 Created
 	}
@@ -238,30 +248,30 @@ class Woomorr_Quotes_API_Controller {
 		$id = (int) $request['id'];
 		$existing_quote = $this->get_quote_by_id( $id, false );
 		if ( ! $existing_quote ) {
-			return new WP_Error( 'rest_not_found', 'Quote not found to update.', [ 'status' => 404 ] );
+			return new WP_Error( 'rest_not_found', 'Quote not found to update.', array( 'status' => 404 ) );
 		}
 
 		$body = $request->get_json_params();
 		$quote_data = $this->prepare_item_for_db( $body, $existing_quote );
-		$line_items = isset( $body['line_items'] ) && is_array( $body['line_items'] ) ? $body['line_items'] : [];
+		$line_items = isset( $body['line_items'] ) && is_array( $body['line_items'] ) ? $body['line_items'] : array();
 
 		$this->wpdb->query( 'START TRANSACTION' );
 
-		// Update main quote
-		$updated = $this->wpdb->update( $this->table_quotes, $quote_data, [ 'quote_id' => $id ] );
+		// Update main quote.
+		$updated = $this->wpdb->update( $this->table_quotes, $quote_data, array( 'quote_id' => $id ) );
 		if ( false === $updated ) {
 			$this->wpdb->query( 'ROLLBACK' );
-			return new WP_Error( 'rest_db_error', 'Failed to update quote.', [ 'status' => 500, 'db_error' => $this->wpdb->last_error ] );
+			return new WP_Error( 'rest_db_error', 'Failed to update quote.', array( 'status' => 500, 'db_error' => $this->wpdb->last_error ) );
 		}
 
-		// Replace line items (easiest and safest approach)
-		$this->wpdb->delete( $this->table_quote_products, [ 'store_quote_id' => $id ] );
+		// Replace line items (easiest and safest approach).
+		$this->wpdb->delete( $this->table_quote_products, array( 'store_quote_id' => $id ) );
 		foreach ( $line_items as $item ) {
 			$item_data = $this->prepare_line_item_for_db( $item, $id );
 			$item_inserted = $this->wpdb->insert( $this->table_quote_products, $item_data );
 			if ( ! $item_inserted ) {
 				$this->wpdb->query( 'ROLLBACK' );
-				return new WP_Error( 'rest_db_error', 'Failed to update quote line items.', [ 'status' => 500, 'db_error' => $this->wpdb->last_error ] );
+				return new WP_Error( 'rest_db_error', 'Failed to update quote line items.', array( 'status' => 500, 'db_error' => $this->wpdb->last_error ) );
 			}
 		}
 
@@ -286,16 +296,16 @@ class Woomorr_Quotes_API_Controller {
 
 		$this->wpdb->query( 'START TRANSACTION' );
 
-		// Delete line items first
+		// Delete line items first.
 		$this->wpdb->delete( $this->table_quote_products, [ 'store_quote_id' => $id ] );
 
-		// Delete main quote
+		// Delete main quote.
 		$deleted = $this->wpdb->delete( $this->table_quotes, [ 'quote_id' => $id ] );
 		if ( ! $deleted ) {
 			$this->wpdb->query( 'ROLLBACK' );
 			return new WP_Error( 'rest_db_error', 'Failed to delete quote.', [ 'status' => 500, 'db_error' => $this->wpdb->last_error ] );
 		}
-		
+
 		$this->wpdb->query( 'COMMIT' );
 
 		return new WP_REST_Response( [ 'deleted' => true, 'previous' => $quote_to_delete ], 200 );
@@ -325,11 +335,20 @@ class Woomorr_Quotes_API_Controller {
 	 * Sanitize and prepare main quote data for database insertion/update.
 	 */
 	protected function prepare_item_for_db( $data, $existing_data = [] ) {
-		$prepared_data = [
+		$prepared_data = array(
 			'customer_key'        => isset( $data['customer_key'] ) ? sanitize_text_field( $data['customer_key'] ) : $existing_data['customer_key'] ?? null,
 			'supplier_key'        => isset( $data['supplier_key'] ) ? sanitize_text_field( $data['supplier_key'] ) : $existing_data['supplier_key'] ?? null,
 			'customer_id'         => isset( $data['customer_id'] ) ? absint( $data['customer_id'] ) : $existing_data['customer_id'] ?? null,
 			'supplier_id'         => isset( $data['supplier_id'] ) ? absint( $data['supplier_id'] ) : $existing_data['supplier_id'] ?? null,
+
+			'from_user_mobile'        => isset( $data['from_user_mobile'] ) ? sanitize_text_field( $data['from_user_mobile'] ) : $existing_data['from_user_mobile'] ?? null,
+			'from_user_id'         => isset( $data['from_user_id'] ) ? absint( $data['from_user_id'] ) : $existing_data['from_user_id'] ?? null,
+
+			'to_user_mobile'        => isset( $data['to_user_mobile'] ) ? sanitize_text_field( $data['to_user_mobile'] ) : $existing_data['to_user_mobile'] ?? null,
+			'to_user_id'         => isset( $data['to_user_id'] ) ? absint( $data['to_user_id'] ) : $existing_data['to_user_id'] ?? null,
+
+			'quote_ref_code'        => isset( $data['quote_ref_code'] ) ? sanitize_text_field( $data['quote_ref_code'] ) : $existing_data['quote_ref_code'] ?? null,
+
 			'for_business_number' => isset( $data['for_business_number'] ) ? sanitize_text_field( $data['for_business_number'] ) : $existing_data['for_business_number'] ?? null,
 			'for_business_name'   => isset( $data['for_business_name'] ) ? sanitize_text_field( $data['for_business_name'] ) : $existing_data['for_business_name'] ?? null,
 			'quote_status'        => isset( $data['quote_status'] ) ? sanitize_key( $data['quote_status'] ) : $existing_data['quote_status'] ?? 'draft',
@@ -341,7 +360,7 @@ class Woomorr_Quotes_API_Controller {
 			'remarks'             => isset( $data['remarks'] ) ? sanitize_textarea_field( $data['remarks'] ) : $existing_data['remarks'] ?? null,
 			'terms_of_supply'     => isset( $data['terms_of_supply'] ) ? wp_kses_post( $data['terms_of_supply'] ) : $existing_data['terms_of_supply'] ?? null,
 			'expires_at'          => isset( $data['expires_at'] ) ? gmdate( 'Y-m-d H:i:s', strtotime( $data['expires_at'] ) ) : $existing_data['expires_at'] ?? null,
-		];
+		);
 
 		// NEW: Automatically find and set internal WordPress user IDs.
         if ( ! empty( $prepared_data['customer_key'] ) ) {
@@ -386,12 +405,14 @@ class Woomorr_Quotes_API_Controller {
 
 		// Assumes the phone number is stored in the 'billing_phone' meta key.
 		// Change 'billing_phone' if you use a different meta key.
-		$users = get_users([
-			'meta_key'   => 'billing_phone',
-			'meta_value' => sanitize_text_field( $phone ),
-			'number'     => 1,
-			'fields'     => 'ID',
-		]);
+		$users = get_users(
+			array(
+				'meta_key'   => 'billing_phone',
+				'meta_value' => sanitize_text_field( $phone ),
+				'number'     => 1,
+				'fields'     => 'ID',
+			)
+		);
 
 		return ! empty( $users ) ? (int) $users[0] : null;
 	}

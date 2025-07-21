@@ -17,7 +17,7 @@ function woomorrintegration_create_tables() {
 	global $wpdb;
 
 	$charset_collate = $wpdb->get_charset_collate();
-	$table_version   = '1.7';
+	$table_version   = '1.9';
 
 	// Check if the table version is installed.
 	$installed_db_ver = get_option( 'woomorrintegration_db_version' );
@@ -462,6 +462,7 @@ function woomorrintegration_create_tables() {
 	$sql_quotes        = "CREATE TABLE $table_name_quotes (
         quote_id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
         quote_code VARCHAR(30) NOT NULL,
+        quote_ref_code VARCHAR(30) DEFAULT NULL,
 
         -- External keys (e.g., phone numbers)
         customer_key VARCHAR(50) NOT NULL,
@@ -470,6 +471,11 @@ function woomorrintegration_create_tables() {
         -- IDs for internal WordPress linking (can be NULL if user doesn't exist in WP)
         customer_id BIGINT(20) UNSIGNED DEFAULT NULL,
         supplier_id BIGINT(20) UNSIGNED DEFAULT NULL,
+
+        from_user_id BIGINT(20) UNSIGNED DEFAULT NULL,
+        from_user_mobile VARCHAR(50) DEFAULT NULL,
+        to_user_id BIGINT(20) UNSIGNED DEFAULT NULL,
+        to_user_mobile VARCHAR(50) DEFAULT NULL,
 
         for_business_number VARCHAR(50) DEFAULT NULL,
         for_business_name VARCHAR(255) DEFAULT NULL,
@@ -492,6 +498,7 @@ function woomorrintegration_create_tables() {
 
         PRIMARY KEY (quote_id),
         UNIQUE KEY quote_code (quote_code),
+        KEY quote_ref_code (quote_ref_code),
         KEY customer_id (customer_id),
         KEY supplier_id (supplier_id),
         KEY customer_key (customer_key),
