@@ -17,7 +17,7 @@ function woomorrintegration_create_tables() {
 	global $wpdb;
 
 	$charset_collate = $wpdb->get_charset_collate();
-	$table_version   = '1.910';
+	$table_version   = '1.911';
 
 	// Check if the table version is installed.
 	$installed_db_ver = get_option( 'woomorrintegration_db_version' );
@@ -498,6 +498,9 @@ function woomorrintegration_create_tables() {
 
         status_history JSON DEFAULT NULL,
 
+        billing JSON DEFAULT NULL,
+        shipping JSON DEFAULT NULL,
+
         PRIMARY KEY (quote_id),
         UNIQUE KEY quote_code (quote_code),
         KEY quote_ref_code (quote_ref_code),
@@ -514,7 +517,8 @@ function woomorrintegration_create_tables() {
         quote_product_id BIGINT(20) UNSIGNED NOT NULL AUTO_INCREMENT,
         store_quote_id BIGINT(20) UNSIGNED NOT NULL,
         product_id BIGINT(20) UNSIGNED NOT NULL,
-        product_name TEXT NOT NULL,        
+        product_name TEXT NOT NULL,
+        product_image TEXT NULL,
         -- Line item financials (using DECIMAL for precision)
         quantity DECIMAL(10, 2) NOT NULL DEFAULT 1.00,
         unit_price DECIMAL(19, 4) NOT NULL DEFAULT 0.0000,

@@ -177,15 +177,15 @@ class Woomorr_Quotes_API_Controller {
 		// Get an array of just the quote IDs from the first query's results.
 		$quote_ids = wp_list_pluck( $results['data'], 'quote_id' );
 
-		// Initialize line_items array for each quote and parse status_history.
 		foreach ( $results['data'] as $key => $quote ) {
+			$results['data'][ $key ]->billing  = json_decode( $quote->billing, true ) ?: new stdClass();
+			$results['data'][ $key ]->shipping = json_decode( $quote->shipping, true ) ?: new stdClass();
+
 			$results['data'][ $key ]->line_items = array();
 
 			$history = json_decode( $results['data'][ $key ]->status_history, true );
-			if ( ! is_array( $history ) ) {
-				$history = array();
-			}
-			$results['data'][ $key ]->status_history = $history;
+
+			$results['data'][ $key ]->status_history = is_array( $history ) ? $history : array();
 		}
 
 		// Only run the second query if we actually have quotes.
@@ -198,10 +198,10 @@ class Woomorr_Quotes_API_Controller {
 				"SELECT * FROM {$this->table_quote_products} WHERE store_quote_id IN ( {$id_placeholders} )",
 				$quote_ids
 			);
-			$all_line_items = $this->wpdb->get_results( $line_items_query );
+			$all_line_items   = $this->wpdb->get_results( $line_items_query );
 
 			// Group the line items by their parent quote ID.
-			$line_items_by_quote_id = [];
+			$line_items_by_quote_id = array();
 			foreach ( $all_line_items as $item ) {
 				$line_items_by_quote_id[ $item->store_quote_id ][] = $item;
 			}
@@ -412,6 +412,9 @@ class Woomorr_Quotes_API_Controller {
 		);
 
 		if ( $quote ) {
+			$quote['billing']  = json_decode( $quote['billing'], true ) ?: new stdClass();
+			$quote['shipping'] = json_decode( $quote['shipping'], true ) ?: new stdClass();
+
 			$quote['status_history'] = json_decode( $quote['status_history'], true );
 			// Ensure it's always an array in the response, even if null in the DB.
 			if ( ! is_array( $quote['status_history'] ) ) {
@@ -432,6 +435,14 @@ class Woomorr_Quotes_API_Controller {
 	 * Sanitize and prepare main quote data for database insertion/update.
 	 */
 	protected function prepare_item_for_db( $data, $existing_data = [] ) {
+		$billing_address = isset( $data['billing'] ) && is_array( $data['billing'] )
+			? $this->sanitize_address( $data['billing'] )
+			: null;
+
+		$shipping_address = isset( $data['shipping'] ) && is_array( $data['shipping'] )
+			? $this->sanitize_address( $data['shipping'] )
+			: null;
+
 		$prepared_data = array(
 			'customer_key'        => isset( $data['customer_key'] ) ? sanitize_text_field( $data['customer_key'] ) : $existing_data['customer_key'] ?? null,
 			'supplier_key'        => isset( $data['supplier_key'] ) ? sanitize_text_field( $data['supplier_key'] ) : $existing_data['supplier_key'] ?? null,
@@ -458,6 +469,9 @@ class Woomorr_Quotes_API_Controller {
 			'terms_of_supply'     => isset( $data['terms_of_supply'] ) ? wp_kses_post( $data['terms_of_supply'] ) : $existing_data['terms_of_supply'] ?? null,
 			'expires_at'          => isset( $data['expires_at'] ) ? gmdate( 'Y-m-d H:i:s', strtotime( $data['expires_at'] ) ) : $existing_data['expires_at'] ?? null,
 			'created_by'          => isset( $data['created_by'] ) ? sanitize_text_field( $data['created_by'] ) : $existing_data['created_by'] ?? null,
+
+			'billing'             => $billing_address ? wp_json_encode( $billing_address  ) : ( $existing_data['billing'] ?? null ),
+			'shipping'            => $shipping_address ? wp_json_encode( $shipping_address ) : ( $existing_data['shipping'] ?? null ),
 		);
 
 		// NEW: Automatically find and set internal WordPress user IDs.
@@ -475,10 +489,11 @@ class Woomorr_Quotes_API_Controller {
 	 * Sanitize and prepare line item data for database insertion.
 	 */
 	protected function prepare_line_item_for_db( $item, $quote_id ) {
-		return [
+		return array(
 			'store_quote_id'         => $quote_id,
 			'product_id'             => isset( $item['product_id'] ) ? absint( $item['product_id'] ) : 0,
 			'product_name'           => isset( $item['product_name'] ) ? sanitize_text_field( $item['product_name'] ) : '',
+			'product_image'           => isset( $item['product_image'] ) ? sanitize_text_field( $item['product_image'] ) : '',
 			'quantity'               => isset( $item['quantity'] ) ? wc_format_decimal( $item['quantity'] ) : 1,
 			'unit_price'             => isset( $item['unit_price'] ) ? wc_format_decimal( $item['unit_price'] ) : 0,
 			'line_subtotal'          => isset( $item['line_subtotal'] ) ? wc_format_decimal( $item['line_subtotal'] ) : 0,
@@ -487,7 +502,7 @@ class Woomorr_Quotes_API_Controller {
 			'product_note'           => isset( $item['product_note'] ) ? sanitize_textarea_field( $item['product_note'] ) : null,
 			'product_remarks'        => isset( $item['product_remarks'] ) ? sanitize_textarea_field( $item['product_remarks'] ) : null,
 			'product_supply_remarks' => isset( $item['product_supply_remarks'] ) ? sanitize_textarea_field( $item['product_supply_remarks'] ) : null,
-		];
+		);
 	}
 
 	/**
@@ -513,6 +528,31 @@ class Woomorr_Quotes_API_Controller {
 		);
 
 		return ! empty( $users ) ? (int) $users[0] : null;
+	}
+
+	/**
+	 * Helper function to sanitize an address object.
+	 *
+	 * @param array $address The address object from the request.
+	 * @return array The sanitized address object.
+	 */
+	protected function sanitize_address(array $address) {
+		$sanitized = array();
+		$fields    = array(
+			'first_name', 'last_name', 'company', 'address_1', 'address_2',
+			'city', 'state', 'postcode', 'country', 'email', 'phone'
+		);
+
+		foreach ( $fields as $field ) {
+			if ( isset( $address[$field] ) ) {
+				if ( $field === 'email' ) {
+					$sanitized[$field] = sanitize_email( $address[$field] );
+				} else {
+					$sanitized[$field] = sanitize_text_field( $address[$field] );
+				}
+			}
+		}
+		return $sanitized;
 	}
 }
 
