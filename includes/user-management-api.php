@@ -146,6 +146,17 @@ function ffintegration_user_management_handler( $data ) {
 			}
 			return new WP_REST_Response( $users_info, 200 );
 		}
+
+		if ( isset( $request_params['user_mobile'] ) && ! empty( $request_params['user_mobile'] ) ) {
+			$existing_users = get_users_by_meta( 'user_mobile', $request_params['user_mobile'] );
+			$users_info     = array();
+			foreach ( $existing_users as $user ) {
+				$user_info    = ffintegration_beautify_users_data( $user );
+				$users_info[] = $user_info;
+			}
+			return new WP_REST_Response( $users_info, 200 );
+		}
+
 		$other_filter_fields = array(
 			'store_url',
 			'store_short_url',

@@ -74,3 +74,5 @@ function fasal_basha_send_frame_options_header() {
 }
 add_action( 'admin_init', 'fasal_basha_send_frame_options_header', 11, 0 );
 add_action( 'login_init', 'fasal_basha_send_frame_options_header', 11, 0 );
+
+add_filter( 'woocommerce_store_api_disable_nonce_check', '__return_true' );
