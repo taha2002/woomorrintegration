@@ -307,7 +307,9 @@ class Woomorr_Quotes_API_Controller {
 	 */
 	public function update_item( $request ) {
 		$id = (int) $request['id'];
-		$existing_quote = $this->get_quote_by_id( $id, false );
+		// $existing_quote = $this->get_quote_by_id( $id, false );.
+		$existing_quote = $this->get_raw_quote_by_id( $id );
+
 		if ( ! $existing_quote ) {
 			return new WP_Error( 'rest_not_found', 'Quote not found to update.', array( 'status' => 404 ) );
 		}
@@ -318,7 +320,7 @@ class Woomorr_Quotes_API_Controller {
 
 		// --- NEW: Logic to append to the JSON history field ---.
 		// Decode existing history to start with.
-		$history =  $existing_quote['status_history'];
+		$history = json_decode( $existing_quote['status_history'], true );
 		if ( ! is_array( $history ) ) {
 			$history = array();
 		}
@@ -348,6 +350,7 @@ class Woomorr_Quotes_API_Controller {
 		$updated = $this->wpdb->update( $this->table_quotes, $quote_data, array( 'quote_id' => $id ) );
 		if ( false === $updated ) {
 			$this->wpdb->query( 'ROLLBACK' );
+			var_dump( $updated );
 			return new WP_Error( 'rest_db_error', 'Failed to update quote.', array( 'status' => 500, 'db_error' => $this->wpdb->last_error ) );
 		}
 
@@ -553,6 +556,17 @@ class Woomorr_Quotes_API_Controller {
 			}
 		}
 		return $sanitized;
+	}
+
+	/**
+	 * Helper to get raw quote data directly from the DB without decoding JSON fields.
+	 * This is used internally for updates.
+	 */
+	protected function get_raw_quote_by_id( $id ) {
+		return $this->wpdb->get_row(
+			$this->wpdb->prepare( "SELECT * FROM {$this->table_quotes} WHERE quote_id = %d", $id ),
+			ARRAY_A
+		);
 	}
 }
 
