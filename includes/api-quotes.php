@@ -177,6 +177,11 @@ class Woomorr_Quotes_API_Controller {
 		// Get an array of just the quote IDs from the first query's results.
 		$quote_ids = wp_list_pluck( $results['data'], 'quote_id' );
 
+		$currency_data = array(
+			'code'   => get_woocommerce_currency(),
+			'symbol' => get_woocommerce_currency_symbol(),
+		);
+
 		foreach ( $results['data'] as $key => $quote ) {
 			$results['data'][ $key ]->billing  = json_decode( $quote->billing, true ) ?: new stdClass();
 			$results['data'][ $key ]->shipping = json_decode( $quote->shipping, true ) ?: new stdClass();
@@ -186,6 +191,8 @@ class Woomorr_Quotes_API_Controller {
 			$history = json_decode( $results['data'][ $key ]->status_history, true );
 
 			$results['data'][ $key ]->status_history = is_array( $history ) ? $history : array();
+
+			$results['data'][ $key ]->currency = $currency_data;
 		}
 
 		// Only run the second query if we actually have quotes.
@@ -415,8 +422,14 @@ class Woomorr_Quotes_API_Controller {
 		);
 
 		if ( $quote ) {
+			$currency_data = array(
+				'code'   => get_woocommerce_currency(),
+				'symbol' => get_woocommerce_currency_symbol(),
+			);
+
 			$quote['billing']  = json_decode( $quote['billing'], true ) ?: new stdClass();
 			$quote['shipping'] = json_decode( $quote['shipping'], true ) ?: new stdClass();
+			$quote['currency'] = $currency_data;
 
 			$quote['status_history'] = json_decode( $quote['status_history'], true );
 			// Ensure it's always an array in the response, even if null in the DB.
